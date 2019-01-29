@@ -299,6 +299,9 @@ var actions = {
   SET_USE_BLOCKIE: 'SET_USE_BLOCKIE',
   setUseBlockie,
 
+  SET_PARTICIPATE_IN_METAMETRICS: 'SET_PARTICIPATE_IN_METAMETRICS',
+  setParticipateInMetaMetrics,
+
   // locale
   SET_CURRENT_LOCALE: 'SET_CURRENT_LOCALE',
   SET_LOCALE_MESSAGES: 'SET_LOCALE_MESSAGES',
@@ -2583,6 +2586,26 @@ function forceUpdateMetamaskState (dispatch) {
 function toggleAccountMenu () {
   return {
     type: actions.TOGGLE_ACCOUNT_MENU,
+  }
+}
+
+function setParticipateInMetaMetrics (val) {
+  return (dispatch) => {
+    log.debug(`background.setParticipateInMetaMetrics`)
+    return new Promise((resolve, reject) => {
+      background.setParticipateInMetaMetrics(val, (err) => {
+        if (err) {
+          dispatch(actions.displayWarning(err.message))
+          return reject(err)
+        }
+
+        resolve(val)
+      })
+      dispatch({
+        type: actions.SET_PARTICIPATE_IN_METAMETRICS,
+        value: val,
+      })
+    })
   }
 }
 

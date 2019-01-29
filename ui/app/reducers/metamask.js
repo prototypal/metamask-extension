@@ -56,6 +56,7 @@ function reduceMetamask (state, action) {
     },
     completedOnboarding: false,
     knownMethodData: {},
+    participateInMetaMetrics: null,
   }, state.metamask)
 
   switch (action.type) {
@@ -335,6 +336,11 @@ function reduceMetamask (state, action) {
           [ssMarketInfo.pair]: ssMarketInfo,
         },
         coinOptions,
+      })
+
+    case actions.SET_PARTICIPATE_IN_METAMETRICS:
+      return extend(metamaskState, {
+        participateInMetaMetrics: action.value,
       })
 
     case actions.SET_USE_BLOCKIE:
