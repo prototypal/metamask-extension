@@ -26,6 +26,7 @@ const INITIALIZE_UNIQUE_IMAGE_ROUTE = '/initialize/create-password/unique-image'
 const INITIALIZE_NOTICE_ROUTE = '/initialize/notice'
 const INITIALIZE_SEED_PHRASE_ROUTE = '/initialize/seed-phrase'
 const INITIALIZE_CONFIRM_SEED_PHRASE_ROUTE = '/initialize/seed-phrase/confirm'
+const INITIALIZE_METAMETRICS_OPT_IN_ROUTE = '/initialize/metametrics-opt-in'
 
 const CONFIRM_TRANSACTION_ROUTE = '/confirm-transaction'
 const CONFIRM_SEND_ETHER_PATH = '/send-ether'
@@ -72,4 +73,5 @@ module.exports = {
   CONFIRM_TRANSFER_FROM_PATH,
   CONFIRM_TOKEN_METHOD_PATH,
   SIGNATURE_REQUEST_PATH,
+  INITIALIZE_METAMETRICS_OPT_IN_ROUTE,
 }

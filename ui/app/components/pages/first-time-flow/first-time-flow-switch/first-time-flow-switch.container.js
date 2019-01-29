@@ -7,6 +7,7 @@ const mapStateToProps = ({ metamask }) => {
     isInitialized,
     isUnlocked,
     noActiveNotices,
+    participateInMetaMetrics: optInMetaMetrics,
   } = metamask
 
   return {
@@ -14,6 +15,7 @@ const mapStateToProps = ({ metamask }) => {
     isInitialized,
     isUnlocked,
     noActiveNotices,
+    optInMetaMetrics,
   }
 }
 

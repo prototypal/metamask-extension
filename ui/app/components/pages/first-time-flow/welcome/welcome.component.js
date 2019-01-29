@@ -3,12 +3,14 @@ import React, { PureComponent } from 'react'
 import PropTypes from 'prop-types'
 import Mascot from '../../../mascot'
 import Button from '../../../button'
-import { INITIALIZE_CREATE_PASSWORD_ROUTE, INITIALIZE_NOTICE_ROUTE } from '../../../../routes'
+import { INITIALIZE_CREATE_PASSWORD_ROUTE, INITIALIZE_METAMETRICS_OPT_IN_ROUTE } from '../../../../routes'
 
 export default class Welcome extends PureComponent {
   static propTypes = {
     history: PropTypes.object,
     isInitialized: PropTypes.bool,
+    participateInMetaMetrics: PropTypes.bool,
+    welcomeScreenSeen: PropTypes.bool,
   }
 
   static contextTypes = {
@@ -22,15 +24,17 @@ export default class Welcome extends PureComponent {
   }
 
   componentDidMount () {
-    const { history, isInitialized } = this.props
+    const { history, participateInMetaMetrics, welcomeScreenSeen } = this.props
 
-    if (isInitialized) {
-      history.push(INITIALIZE_NOTICE_ROUTE)
+    if (welcomeScreenSeen && participateInMetaMetrics !== null) {
+      history.push(INITIALIZE_CREATE_PASSWORD_ROUTE)
+    } else if (welcomeScreenSeen) {
+      history.push(INITIALIZE_METAMETRICS_OPT_IN_ROUTE)
     }
   }
 
   handleContinue = () => {
-    this.props.history.push(INITIALIZE_CREATE_PASSWORD_ROUTE)
+    this.props.history.push(INITIALIZE_METAMETRICS_OPT_IN_ROUTE)
   }
 
   render () {
