@@ -57,6 +57,7 @@ function reduceMetamask (state, action) {
     completedOnboarding: false,
     knownMethodData: {},
     participateInMetaMetrics: null,
+    metaMetricsSendCount: 0,
   }, state.metamask)
 
   switch (action.type) {
@@ -341,6 +342,11 @@ function reduceMetamask (state, action) {
     case actions.SET_PARTICIPATE_IN_METAMETRICS:
       return extend(metamaskState, {
         participateInMetaMetrics: action.value,
+      })
+
+    case actions.SET_METAMETRICS_SEND_COUNT:
+      return extend(metamaskState, {
+        metaMetricsSendCount: action.value,
       })
 
     case actions.SET_USE_BLOCKIE:

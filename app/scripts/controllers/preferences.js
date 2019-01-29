@@ -1,6 +1,6 @@
 const ObservableStore = require('obs-store')
 const normalizeAddress = require('eth-sig-util').normalize
-const { isValidAddress } = require('ethereumjs-util')
+const { isValidAddress, sha3, bufferToHex } = require('ethereumjs-util')
 const extend = require('xtend')
 
 
@@ -47,6 +47,7 @@ class PreferencesController {
       completedOnboarding: false,
       completedUiMigration: true,
       metaMetricsId: null,
+      metaMetricsSendCount: 0,
     }, opts.initState)
 
     this.diagnostics = opts.diagnostics
@@ -96,6 +97,14 @@ class PreferencesController {
     } else if (bool === false) {
       this.store.updateState({ metaMetricsId: null })
     }
+  }
+
+  setMetaMetricsSendCount (val) {
+    this.store.updateState({ metaMetricsSendCount: val })
+  }
+
+  getMetaMetricsSendCount () {
+    return this.store.getState().metaMetricsSendCount
   }
 
   getSuggestedTokens () {

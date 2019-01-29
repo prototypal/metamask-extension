@@ -384,6 +384,7 @@ module.exports = class MetamaskController extends EventEmitter {
       setCurrentCurrency: this.setCurrentCurrency.bind(this),
       setUseBlockie: this.setUseBlockie.bind(this),
       setParticipateInMetaMetrics: this.setParticipateInMetaMetrics.bind(this),
+      setMetaMetricsSendCount: this.setMetaMetricsSendCount.bind(this),
       setCurrentLocale: this.setCurrentLocale.bind(this),
       markAccountsFound: this.markAccountsFound.bind(this),
       markPasswordForgotten: this.markPasswordForgotten.bind(this),
@@ -1579,6 +1580,16 @@ module.exports = class MetamaskController extends EventEmitter {
       cb(err)
     }
   }
+
+  setMetaMetricsSendCount (val, cb) {
+    try {
+      this.preferencesController.setMetaMetricsSendCount(val)
+      cb(null)
+    } catch (err) {
+      cb(err)
+    }
+  }
+
 
   /**
    * A method for setting a user's current locale, affecting the language rendered.
