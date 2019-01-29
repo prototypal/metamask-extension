@@ -7,8 +7,15 @@ import Identicon from '../../../identicon'
 import Breadcrumbs from '../../../breadcrumbs'
 import { DEFAULT_ROUTE, INITIALIZE_SEED_PHRASE_ROUTE } from '../../../../routes'
 
+const noticeTitleEventNameMap = {
+  'Terms of Use': 'acceptedTOS',
+  'Privacy Notice': 'acceptedPrivacyNotice',
+  'Phishing Warning': 'acceptedPhishingWarning',
+}
+
 export default class Notices extends PureComponent {
   static contextTypes = {
+    metricsEvent: PropTypes.func,
     t: PropTypes.func,
   }
 
@@ -54,6 +61,14 @@ export default class Notices extends PureComponent {
     } = this.props
 
     const hasActiveNotices = await markNoticeRead(nextUnreadNotice)
+
+    this.context.metricsEvent({
+      eventOpts: {
+        category: 'Acquisition',
+        action: 'userClickContinue',
+        name: noticeTitleEventNameMap[nextUnreadNotice.title],
+      },
+    })
 
     if (!hasActiveNotices) {
       if (isImportedKeyring) {

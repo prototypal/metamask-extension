@@ -11,6 +11,7 @@ import { selectSeedWord, deselectSeedWord } from './confirm-seed-phrase.state'
 
 export default class ConfirmSeedPhrase extends PureComponent {
   static contextTypes = {
+    metricsEvent: PropTypes.func,
     t: PropTypes.func,
   }
 
@@ -53,6 +54,13 @@ export default class ConfirmSeedPhrase extends PureComponent {
 
     try {
       await completeOnboarding()
+      this.context.metricsEvent({
+        eventOpts: {
+          category: 'Acquisition',
+          action: 'userClickContinue',
+          name: 'onboardingComplete',
+        },
+      })
       history.push(DEFAULT_ROUTE)
       openBuyEtherModal()
     } catch (error) {

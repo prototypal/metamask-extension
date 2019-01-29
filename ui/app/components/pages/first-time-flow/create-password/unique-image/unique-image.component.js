@@ -8,6 +8,7 @@ import { INITIALIZE_NOTICE_ROUTE } from '../../../../../routes'
 export default class UniqueImageScreen extends PureComponent {
   static contextTypes = {
     t: PropTypes.func,
+    metricsEvent: PropTypes.func,
   }
 
   static propTypes = {
@@ -38,7 +39,16 @@ export default class UniqueImageScreen extends PureComponent {
         <Button
           type="first-time"
           className="first-time-flow__button"
-          onClick={() => history.push(INITIALIZE_NOTICE_ROUTE)}
+          onClick={() => {
+            this.context.metricsEvent({
+              eventOpts: {
+                category: 'Acquisition',
+                action: 'userClickContinue',
+                name: 'confirmedAvatar',
+              },
+            })
+            history.push(INITIALIZE_NOTICE_ROUTE)
+          }}
         >
           { t('next') }
         </Button>

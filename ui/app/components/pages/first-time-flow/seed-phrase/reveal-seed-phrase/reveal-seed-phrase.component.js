@@ -11,6 +11,7 @@ import { exportAsFile } from '../../../../../../app/util'
 export default class RevealSeedPhrase extends PureComponent {
   static contextTypes = {
     t: PropTypes.func,
+    metricsEvent: PropTypes.func,
   }
 
   static propTypes = {
@@ -56,7 +57,16 @@ export default class RevealSeedPhrase extends PureComponent {
           !isShowingSeedPhrase && (
             <div
               className="reveal-seed-phrase__secret-blocker"
-              onClick={() => this.setState({ isShowingSeedPhrase: true })}
+              onClick={() => {
+                this.context.metricsEvent({
+                  eventOpts: {
+                    category: 'Acquisition',
+                    action: 'userClicksReveal',
+                    name: 'revealedSecretWords',
+                  },
+                })
+                this.setState({ isShowingSeedPhrase: true })
+              }}
             >
               <LockIcon
                 width="28px"
