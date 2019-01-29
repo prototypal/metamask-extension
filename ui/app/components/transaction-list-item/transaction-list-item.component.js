@@ -33,6 +33,10 @@ export default class TransactionListItem extends PureComponent {
     fetchGasEstimates: PropTypes.func,
   }
 
+  static contextTypes = {
+    metricsEvent: PropTypes.func,
+  }
+
   state = {
     showTransactionDetails: false,
   }
@@ -50,6 +54,13 @@ export default class TransactionListItem extends PureComponent {
       return
     }
 
+    this.context.metricsEvent({
+      eventOpts: {
+        category: 'Activation/Retention',
+        action: 'userClicks',
+        name: 'navExpandTransaction',
+      },
+    })
     this.setState({ showTransactionDetails: !showTransactionDetails })
   }
 

@@ -33,6 +33,7 @@ const localeOptions = locales.map(locale => {
 export default class SettingsTab extends PureComponent {
   static contextTypes = {
     t: PropTypes.func,
+    metricsEvent: PropTypes.func,
   }
 
   static propTypes = {
@@ -232,10 +233,44 @@ export default class SettingsTab extends PureComponent {
     const { setRpcTarget, displayWarning } = this.props
     if (validUrl.isWebUri(newRpc)) {
       if (!!chainId && Number.isNaN(parseInt(chainId))) {
+        this.context.metricsEvent({
+          eventOpts: {
+            category: 'Activation/Retention',
+            action: 'userEnteredCustomRpc',
+            name: 'settingsCustomRPCError',
+          },
+          customVariables: {
+            networkId: newRpc,
+            chainId,
+          },
+        })
         return displayWarning(`${this.context.t('invalidInput')} chainId`)
       }
+
+      this.context.metricsEvent({
+        eventOpts: {
+          category: 'Activation/Retention',
+          action: 'userEnteredCustomRpc',
+          name: 'settingsCustomRPCSuccess',
+        },
+        customVariables: {
+          networkId: newRpc,
+          chainId,
+        },
+      })
       setRpcTarget(newRpc, chainId, ticker, nickname)
     } else {
+      this.context.metricsEvent({
+        eventOpts: {
+          category: 'Activation/Retention',
+          action: 'userEnteredCustomRpc',
+          name: 'settingsCustomRPCError',
+        },
+        customVariables: {
+          networkId: newRpc,
+          chainId,
+        },
+      })
       const appendedRpc = `http://${newRpc}`
 
       if (validUrl.isWebUri(appendedRpc)) {
@@ -355,6 +390,13 @@ export default class SettingsTab extends PureComponent {
               className="settings-tab__button--orange"
               onClick={event => {
                 event.preventDefault()
+                this.context.metricsEvent({
+                  eventOpts: {
+                    category: 'Activation/Retention',
+                    action: 'userClickResetAccount',
+                    name: 'settingsUserResetAccount',
+                  },
+                })
                 showResetAccountConfirmationModal()
               }}
             >
