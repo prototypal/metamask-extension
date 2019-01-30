@@ -2572,6 +2572,7 @@ function callBackgroundThenUpdate (method, ...args) {
 
 function forceUpdateMetamaskState (dispatch) {
   log.debug(`background.getState`)
+  console.log('111111 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!')
   return new Promise((resolve, reject) => {
     background.getState((err, newState) => {
       if (err) {
@@ -2580,6 +2581,7 @@ function forceUpdateMetamaskState (dispatch) {
       }
 
       dispatch(actions.updateMetamaskState(newState))
+      console.log('222222 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!', newState)
       resolve(newState)
     })
   })
