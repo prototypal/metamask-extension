@@ -29,6 +29,7 @@ const mapStateToProps = state => {
     } = {},
     provider = {},
     currentLocale,
+    participateInMetaMetrics,
   } = metamask
   const { useNativeCurrencyAsPrimaryCurrency } = preferencesSelector(state)
 
@@ -44,6 +45,7 @@ const mapStateToProps = state => {
     privacyMode,
     provider,
     useNativeCurrencyAsPrimaryCurrency,
+    participateInMetaMetrics,
   }
 }
 
@@ -63,6 +65,7 @@ const mapDispatchToProps = dispatch => {
       return dispatch(setUseNativeCurrencyAsPrimaryCurrencyPreference(value))
     },
     showClearApprovalModal: () => dispatch(showModal({ name: 'CLEAR_APPROVED_ORIGINS' })),
+    setParticipateInMetaMetrics: (val) => dispatch(setParticipateInMetaMetrics(val)),
   }
 }
 
