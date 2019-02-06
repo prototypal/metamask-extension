@@ -571,9 +571,9 @@ export default class SettingsTab extends PureComponent {
     return (
       <div className="settings-page__content-row">
         <div className="settings-page__content-item">
-          <span>{ 'Participate in MetaMetrics' }</span>
+          <span>{ t('participateInMetaMetrics') }</span>
           <div className="settings-page__content-description">
-            { 'Participate in MetaMetrics to help us make MetaMask better' }
+            { t('participateInMetaMetricsDescription') }
           </div>
         </div>
         <div className="settings-page__content-item">
@@ -608,7 +608,7 @@ export default class SettingsTab extends PureComponent {
         { this.renderHexDataOptIn() }
         { this.renderAdvancedGasInputInline() }
         { this.renderBlockieOptIn() }
-        { this.renderMetaMetricsOptIn () }
+        { this.renderMetaMetricsOptIn() }
       </div>
     )
   }

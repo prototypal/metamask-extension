@@ -12,6 +12,7 @@ import {
   setFeatureFlag,
   showModal,
   setUseNativeCurrencyAsPrimaryCurrencyPreference,
+  setParticipateInMetaMetrics,
 } from '../../../../actions'
 import { preferencesSelector } from '../../../../selectors'
 
