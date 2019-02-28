@@ -14,7 +14,7 @@ function mapStateToProps (state) {
   return {
     pluginsScripts: state.metamask.pluginsScripts,
     currentCurrency: state.metamask.currentCurrency,
-    selectedPluginUid: state.metamask.selectedPluginUid,    
+    selectedPluginUid: state.metamask.selectedPluginUid,
     userAddress: selectors.getSelectedAddress(state),
     contractExchangeRates: state.metamask.contractExchangeRates,
     conversionRate: state.metamask.conversionRate,
@@ -24,7 +24,7 @@ function mapStateToProps (state) {
 
 function mapDispatchToProps (dispatch) {
   return {
-    setSelectedPluginUid: pluginUid => dispatch(actions.setSelectedPluginUid(pluginUid)),    
+    setSelectedPluginUid: pluginUid => dispatch(actions.setSelectedPluginUid(pluginUid)),
     hideSidebar: () => dispatch(actions.hideSidebar()),
   }
 }
@@ -66,38 +66,68 @@ PluginCell.prototype.render = function () {
 //  console.log(this.props)
 
   let balance
-  if (this.props.pluginsScripts[uid]){
-    balance = JSON.stringify(this.props.pluginsScripts[uid].mainBalance) + " ETH"
-  }
-  else {
-    balance = "loading"
+  let dollarBalance
+  if (this.props.pluginsScripts[uid]) {
+    balance = JSON.stringify(this.props.pluginsScripts[uid].mainBalance) + ' ETH'
+    dollarBalance = (this.props.pluginsScripts[uid].mainBalance * conversionRate) + ' USD'
+  } else {
+    balance = 'loading'
+    dollarBalance = ''
   }
 
   return (
-    h('div.plugin-list-item', {
-      className: "plugin-list-item",
-      onClick: () => {
-        setSelectedPluginUid(uid)
-      },
-    }, [
-      h('div', name),
-      h('div', uid),
-      h('div', "personaPath: " + personaPath),      
-      h('div', "script: " + scriptUrl),
-
-      h('div', balance),
-      
-      h('i.fa.fa-ellipsis-h.fa-lg.plugin-list-item__ellipsis.cursor-pointer', {
-          onClick: (e) => {
-            e.stopPropagation()
-            this.setState({ pluginMenuOpen: true })
-          },
-        }),
-      pluginMenuOpen && h(pluginMenuDropdown, {
-        onClose: () => this.setState({ pluginMenuOpen: false }),
-        plugin: { name, uid, scriptUrl, gatewayAddress },
-      }),
+    h('div.flex-column.flex-justify-center.bg-grey.h-80px', {}, [
+      h('div.plugin-list-item.flex-row.space-around', {
+        onClick: () => {
+          setSelectedPluginUid(uid)
+        },
+        onRightClick: () => {
+          console.log('test')
+        },
+      }, [
+        h('img.w-50px.h-50px.border-radius-50', {src: image || 'https://playground-staging.counterfactual.com/assets/icon/logo.svg'}),
+        h('div', {}, [
+          h('div', balance),
+          h('div', dollarBalance),
+        ]),
+        h('div.flex-column.flex-justify-center', {}, [
+          h('i.fa.fa-ellipsis-h.fa-lg.plugin-list-item__ellipsis.cursor-pointer', {
+              onClick: (e) => {
+                e.stopPropagation()
+                this.setState({ pluginMenuOpen: true })
+              },
+            }),
+          pluginMenuOpen && h(pluginMenuDropdown, {
+            onClose: () => this.setState({ pluginMenuOpen: false }),
+            plugin: { name, uid, scriptUrl, gatewayAddress },
+          }),
+        ]),
+      ]),
     ])
+    // h('div.plugin-list-item', {
+    //   className: 'plugin-list-item',
+    //   onClick: () => {
+    //     setSelectedPluginUid(uid)
+    //   },
+    // }, [
+    //   h('div', name),
+    //   h('div', uid),
+    //   h('div', 'personaPath: ' + personaPath),
+    //   h('div', 'script: ' + scriptUrl),
+
+    //   h('div', balance),
+
+    //   h('i.fa.fa-ellipsis-h.fa-lg.plugin-list-item__ellipsis.cursor-pointer', {
+    //       onClick: (e) => {
+    //         e.stopPropagation()
+    //         this.setState({ pluginMenuOpen: true })
+    //       },
+    //     }),
+    //   pluginMenuOpen && h(pluginMenuDropdown, {
+    //     onClose: () => this.setState({ pluginMenuOpen: false }),
+    //     plugin: { name, uid, scriptUrl, gatewayAddress },
+    //   }),
+    // ])
   )
 }
 

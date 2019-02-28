@@ -145,7 +145,7 @@
 }
 
 .cursor-pointer:active {
-  transform: scale(.95);
+  transform: scale(0.95);
 }
 
 .cursor-disabled {
@@ -293,7 +293,7 @@ hr.horizontal-line {
 
 // TODO: move into component-level contextual 'active' state
 .letter-spacey {
-  letter-spacing: .1em;
+  letter-spacing: 0.1em;
 }
 
 .active {
@@ -306,4 +306,20 @@ hr.horizontal-line {
   flex: 1 0 auto;
   display: flex;
   justify-content: flex-end;
+}
+
+.w-50px {
+  width: 50px;
+}
+.h-50px {
+  height: 50px;
+}
+.h-80px {
+  height: 80px;
+}
+.border-radius-50 {
+  border-radius: 50%;
+}
+.bg-grey {
+  background-color: lightgrey;
 }
