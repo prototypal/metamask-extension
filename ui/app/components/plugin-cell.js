@@ -24,12 +24,16 @@ function mapStateToProps (state) {
 
 function mapDispatchToProps (dispatch) {
   return {
-    setSelectedPluginUid: pluginUid => dispatch(actions.setSelectedPluginUid(pluginUid)),
+    setSelectedPluginUid: pluginUid =>
+      dispatch(actions.setSelectedPluginUid(pluginUid)),
     hideSidebar: () => dispatch(actions.hideSidebar()),
   }
 }
 
-module.exports = connect(mapStateToProps, mapDispatchToProps)(PluginCell)
+module.exports = connect(
+  mapStateToProps,
+  mapDispatchToProps
+)(PluginCell)
 
 inherits(PluginCell, Component)
 function PluginCell () {
@@ -63,72 +67,91 @@ PluginCell.prototype.render = function () {
     // userAddress,
     image,
   } = props
-//  console.log(this.props)
+  //  console.log(this.props)
 
   let balance
   let dollarBalance
   if (this.props.pluginsScripts[uid]) {
-    balance = JSON.stringify(this.props.pluginsScripts[uid].mainBalance) + ' ETH'
-    dollarBalance = (this.props.pluginsScripts[uid].mainBalance * conversionRate) + ' USD'
+    balance = `${JSON.stringify(
+      this.props.pluginsScripts[uid].mainBalance
+    )} ETH`
+    dollarBalance = `$${this.props.pluginsScripts[uid].mainBalance *
+      conversionRate} USD`
   } else {
     balance = 'loading'
     dollarBalance = ''
   }
 
-  return (
-    h('div.flex-column.flex-justify-center.bg-grey.h-80px', {}, [
-      h('div.plugin-list-item.flex-row.space-around', {
-        onClick: () => {
-          setSelectedPluginUid(uid)
+  return h(
+    'div.flex-column.wallet-balance-wrapper.wallet-balance-wrapper--active',
+    {},
+    [
+      h(
+        'div.wallet-balance',
+        {
+          onClick: () => {
+            setSelectedPluginUid(uid)
+          },
+          onRightClick: () => {
+            console.log('test')
+          },
         },
-        onRightClick: () => {
-          console.log('test')
-        },
-      }, [
-        h('img.w-50px.h-50px.border-radius-50', {src: image || 'https://playground-staging.counterfactual.com/assets/icon/logo.svg'}),
-        h('div', {}, [
-          h('div', balance),
-          h('div', dollarBalance),
-        ]),
-        h('div.flex-column.flex-justify-center', {}, [
-          h('i.fa.fa-ellipsis-h.fa-lg.plugin-list-item__ellipsis.cursor-pointer', {
-              onClick: (e) => {
-                e.stopPropagation()
-                this.setState({ pluginMenuOpen: true })
-              },
+        [
+          h('div.balance-container', {}, [
+            h('img.w-50px.h-50px.border-radius-50', {
+              src:
+                image ||
+                'https://playground-staging.counterfactual.com/assets/icon/logo.svg',
             }),
-          pluginMenuOpen && h(pluginMenuDropdown, {
-            onClose: () => this.setState({ pluginMenuOpen: false }),
-            plugin: { name, uid, scriptUrl, gatewayAddress },
-          }),
-        ]),
-      ]),
-    ])
-    // h('div.plugin-list-item', {
-    //   className: 'plugin-list-item',
-    //   onClick: () => {
-    //     setSelectedPluginUid(uid)
-    //   },
-    // }, [
-    //   h('div', name),
-    //   h('div', uid),
-    //   h('div', 'personaPath: ' + personaPath),
-    //   h('div', 'script: ' + scriptUrl),
-
-    //   h('div', balance),
-
-    //   h('i.fa.fa-ellipsis-h.fa-lg.plugin-list-item__ellipsis.cursor-pointer', {
-    //       onClick: (e) => {
-    //         e.stopPropagation()
-    //         this.setState({ pluginMenuOpen: true })
-    //       },
-    //     }),
-    //   pluginMenuOpen && h(pluginMenuDropdown, {
-    //     onClose: () => this.setState({ pluginMenuOpen: false }),
-    //     plugin: { name, uid, scriptUrl, gatewayAddress },
-    //   }),
-    // ])
+            h('div.flex-column.balance-display', {}, [
+              h('div.currency-display-component.token-amount', balance),
+              h('div.currency-display-component', dollarBalance),
+            ]),
+            h('div.flex-column.flex-justify-center', {}, [
+              h(
+                'i.fa.fa-ellipsis-h.fa-lg.plugin-list-item__ellipsis.cursor-pointer',
+                {
+                  onClick: e => {
+                    e.stopPropagation()
+                    this.setState({ pluginMenuOpen: true })
+                  },
+                }
+              ),
+              pluginMenuOpen &&
+                h(pluginMenuDropdown, {
+                  onClose: () => this.setState({ pluginMenuOpen: false }),
+                  plugin: { name, uid, scriptUrl, gatewayAddress },
+                }),
+            ]),
+          ]),
+        ]
+      ),
+    ]
   )
+  // h('div.plugin-list-item', {
+  //   className: 'plugin-list-item',
+  //   onClick: () => {
+  //     setSelectedPluginUid(uid)
+  //   },
+  // }, [
+  //   h('div', name),
+  //   h('div', uid),
+  //   h('div', 'personaPath: ' + personaPath),
+  //   h('div', 'script: ' + scriptUrl),
+
+  //   h('div', balance),
+
+  //   h('i.fa.fa-ellipsis-h.fa-lg.plugin-list-item__ellipsis.cursor-pointer', {
+  //       onClick: (e) => {
+  //         e.stopPropagation()
+  //         this.setState({ pluginMenuOpen: true })
+  //       },
+  //     }),
+  //   pluginMenuOpen && h(pluginMenuDropdown, {
+  //     onClose: () => this.setState({ pluginMenuOpen: false }),
+  //     plugin: { name, uid, scriptUrl, gatewayAddress },
+  //   }),
+  // ])
 }
 
 PluginCell.prototype.view = function (address, userAddress, network, event) {
@@ -146,4 +169,3 @@ function etherscanLinkFor (pluginGatewayAddress, address, network) {
   const prefix = prefixForNetwork(network)
   return `https://${prefix}etherscan.io/token/${pluginGatewayAddress}?a=${pluginGatewayAddress}`
 }
-
