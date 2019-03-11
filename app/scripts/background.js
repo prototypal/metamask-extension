@@ -30,6 +30,9 @@ const EdgeEncryptor = require('./edge-encryptor')
 const getFirstPreferredLangCode = require('./lib/get-first-preferred-lang-code')
 const getObjStructure = require('./lib/getObjStructure')
 const setupEnsIpfsResolver = require('./lib/ens-ipfs/setup')
+const Node = require('@counterfactual/node')
+const ethers = require('ethers')
+const uuid = require('uuid')
 
 const {
   ENVIRONMENT_TYPE_POPUP,
@@ -73,6 +76,73 @@ initialize().catch(log.error)
 
 // setup metamask mesh testing container
 setupMetamaskMeshMetrics()
+
+const serviceFactory = new Node.FirebaseServiceFactory({
+  apiKey: 'AIzaSyA5fy_WIAw9mqm59mdN61CiaCSKg8yd4uw',
+  authDomain: 'foobar-91a31.firebaseapp.com',
+  databaseURL: 'https://foobar-91a31.firebaseio.com',
+  projectId: 'foobar-91a31',
+  storageBucket: 'foobar-91a31.appspot.com',
+  messagingSenderId: '432199632441',
+})
+
+// const store = serviceFactory.createStoreService(uuid.v4())
+const store = {
+  // This implements partial path look ups for localStorage
+  async get (desiredKey) {
+      const entries = {}
+      const allKeys = Object.keys(window.localStorage)
+      for (const key of allKeys) {
+          if (key.includes(desiredKey)) {
+              const val = JSON.parse(window.localStorage.getItem(key))
+              if (key === desiredKey) { return val }
+              entries[key] = val
+          } else if (key === desiredKey) {
+              return JSON.parse(window.localStorage.getItem(key))
+          }
+      }
+      for (const key of Object.keys(entries)) {
+          const leafKey = key.split('/')[key.split('/').length - 1]
+          const value = entries[key]
+          delete entries[key]
+          entries[leafKey] = value
+      }
+      return Object.keys(entries).length > 0 ? entries : undefined
+  },
+  async set (pairs) {
+      pairs.forEach(({ key, value }) => {
+          window.localStorage.setItem(key, JSON.stringify(value))
+      })
+      return true
+  },
+}
+store.set([{ key: Node.MNEMONIC_PATH,
+  value: 'barely neck sample owner boost category harbor shield hollow half crack shine' }])
+  .then(async () => {
+  console.log('Creating Node')
+  const messService = serviceFactory.createMessagingService('messaging')
+  const node = await Node.Node.create(
+    messService,
+    store,
+    {
+      STORE_KEY_PREFIX: 'store',
+    },
+    ethers.getDefaultProvider('ropsten'),
+    'ropsten'
+  )
+  console.log('CFNode: ', node)
+  if (platform && platform.addMessageListener) {
+    platform.addMessageListener(({ action = '', origin, data }, { tab }) => {
+      if (tab && tab.id) {
+        switch (action) {
+          case 'plugin_message':
+            console.log('Plugin Data ', data)
+            break
+        }
+      }
+    })
+  }
+})
 
 
 /**
