@@ -175,6 +175,8 @@ function listenForProviderRequest () {
         isEnabled = false
         window.postMessage({ type: 'metamasksetlocked' }, '*')
         break
+      case 'plugin_message_response':
+        window.postMessage({ type: 'plugin_message_response', data: { message: 'playground:response:user' } }, '*')
     }
   })
 }

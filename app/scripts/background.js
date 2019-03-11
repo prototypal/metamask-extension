@@ -137,6 +137,10 @@ store.set([{ key: Node.MNEMONIC_PATH,
         switch (action) {
           case 'plugin_message':
             console.log('Plugin Data ', data)
+            platform.sendMessage({
+              action: 'plugin_message_response',
+              data,
+            }, { id: tab.id })
             break
         }
       }
