@@ -144,6 +144,11 @@ function listenForProviderRequest () {
           action: 'init-is-unlocked',
         })
         break
+      case 'PLUGIN_MESSAGE':
+        extension.runtime.sendMessage({
+          action: 'plugin_message',
+          data: data.data,
+        })
     }
   })
 
