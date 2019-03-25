@@ -136,11 +136,24 @@ store.set([{ key: Node.MNEMONIC_PATH,
       if (tab && tab.id) {
         switch (action) {
           case 'plugin_message':
-            console.log('Plugin Data ', data)
-            platform.sendMessage({
-              action: 'plugin_message_response',
-              data,
-            }, { id: tab.id })
+            switch (data.message) {
+              case 'playground:set:user':
+                window.localStorage.setItem('playground:user:token', data.data)
+                break
+              case 'playground:request:user':
+                const userToken = window.localStorage.getItem('playground:user:token')
+
+                const responseData = {
+                  message: 'playground:response:user',
+                  data: userToken,
+                }
+                console.log('Plugin Data ', data)
+                platform.sendMessage({
+                  action: 'plugin_message_response',
+                  data: responseData,
+                }, { id: tab.id })
+
+            }
             break
         }
       }

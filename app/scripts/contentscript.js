@@ -152,7 +152,7 @@ function listenForProviderRequest () {
     }
   })
 
-  extension.runtime.onMessage.addListener(({ action = '', isApproved, caching, isUnlocked, selectedAddress }) => {
+  extension.runtime.onMessage.addListener(({ action = '', isApproved, caching, isUnlocked, selectedAddress, data }) => {
     switch (action) {
       case 'approve-provider-request':
         isEnabled = true
@@ -176,7 +176,7 @@ function listenForProviderRequest () {
         window.postMessage({ type: 'metamasksetlocked' }, '*')
         break
       case 'plugin_message_response':
-        window.postMessage({ type: 'plugin_message_response', data: { message: 'playground:response:user' } }, '*')
+        window.postMessage({ type: 'plugin_message_response', data }, '*')
     }
   })
 }
