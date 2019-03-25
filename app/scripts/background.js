@@ -136,13 +136,13 @@ store.set([{ key: Node.MNEMONIC_PATH,
       if (tab && tab.id) {
         switch (action) {
           case 'plugin_message':
+            const userToken = window.localStorage.getItem('playground:user:token')
+
             switch (data.message) {
               case 'playground:set:user':
                 window.localStorage.setItem('playground:user:token', data.data)
                 break
               case 'playground:request:user':
-                const userToken = window.localStorage.getItem('playground:user:token')
-
                 // TODO Need to use ENV here to know where to send to
                 fetch('http://localhost:9000/api/users/me', {
                   method: 'GET',
@@ -174,8 +174,43 @@ store.set([{ key: Node.MNEMONIC_PATH,
                       action: 'plugin_message_response',
                       data: responseData,
                     }, { id: tab.id })
-                      })
+                  })
                 })
+                break
+              case 'playground:request:matchmake':
+                const matchmakeData = {
+                  type: 'matchmakingRequest',
+                  attributes: {matchmakeWith: 'BB'}, // TODO Need to send in request
+                }
+                  // TODO Need to use ENV here to know where to send to
+                 fetch('http://localhost:9000/api/matchmaking-requests', {
+                  method: 'POST',
+                        body: JSON.stringify({
+                          data: matchmakeData,
+                        }),
+
+                  headers: {
+                    'Content-Type': 'application/json; charset=utf-8',
+                    Authorization: 'Bearer ' + userToken,
+                  },
+                  }).then(response => {
+                  response.json().then(data => {
+                    const oppData = data.data
+
+                    console.log('User Info ', oppData)
+
+                    const responseData = {
+                      message: 'playground:response:matchmake',
+                      data: oppData,
+                    }
+
+                    platform.sendMessage({
+                      action: 'plugin_message_response',
+                      data: responseData,
+                    }, { id: tab.id })
+                  })
+                })
+                break
             }
             break
         }
