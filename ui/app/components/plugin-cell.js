@@ -92,9 +92,6 @@ PluginCell.prototype.render = function () {
           onClick: () => {
             setSelectedPluginUid(uid)
           },
-          onRightClick: () => {
-            console.log('test')
-          },
         },
         [
           h('div.balance-container', {}, [
