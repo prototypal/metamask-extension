@@ -143,16 +143,39 @@ store.set([{ key: Node.MNEMONIC_PATH,
               case 'playground:request:user':
                 const userToken = window.localStorage.getItem('playground:user:token')
 
-                const responseData = {
-                  message: 'playground:response:user',
-                  data: userToken,
-                }
-                console.log('Plugin Data ', data)
-                platform.sendMessage({
-                  action: 'plugin_message_response',
-                  data: responseData,
-                }, { id: tab.id })
+                // TODO Need to use ENV here to know where to send to
+                fetch('http://localhost:9000/api/users/me', {
+                  method: 'GET',
+                  headers: {
+                    Authorization: 'Bearer ' + userToken,
+                  },
+                }).then(response => {
+                  response.json().then(data => {
+                    const userData = data.data[0]
 
+                    console.log('User Info ', userData)
+
+                    const account = {
+                      balance: '0.2', // Need to get from iFrame Node?
+                      user: {
+                        id: userData.id,
+                        ...userData.attributes,
+                        token: userToken,
+                      },
+                    }
+
+                    const responseData = {
+                      message: 'playground:response:user',
+                      data: account,
+                    }
+
+                    console.log('Plugin Data ', data)
+                    platform.sendMessage({
+                      action: 'plugin_message_response',
+                      data: responseData,
+                    }, { id: tab.id })
+                      })
+                })
             }
             break
         }
