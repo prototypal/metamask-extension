@@ -177,6 +177,21 @@ function listenForProviderRequest () {
         break
       case 'plugin_message_response':
         window.postMessage({ type: 'plugin_message_response', data }, '*')
+        break
+    }
+  })
+
+  extension.runtime.onConnect.addListener(port => {
+    // Created this to try to fix error in background script
+    if(port.name == "cfNodeProvider") {
+      port.onMessage.addListener(function(msg) {
+        if (msg.joke == "Knock knock")
+          port.postMessage({question: "Who's there?"});
+        else if (msg.answer == "Madame")
+          port.postMessage({question: "Madame who?"});
+        else if (msg.answer == "Madame... Bovary")
+          port.postMessage({question: "I don't get it."});
+      });
     }
   })
 }

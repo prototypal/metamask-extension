@@ -137,6 +137,7 @@ store.set([{ key: Node.MNEMONIC_PATH,
   )
   nodeProviderConfig.node = node
   console.log('CFNode: ', node)
+
   if (platform && platform.addMessageListener) {
     platform.addMessageListener(({ action = '', origin, data }, { tab }) => {
       if (tab && tab.id) {
@@ -157,10 +158,9 @@ store.set([{ key: Node.MNEMONIC_PATH,
                 break
               case 'cf-node-provider:init':
                 console.log('Init CF Node Provider')
-                const { port2 } = configureMessagePorts()
+                configureMessagePorts()
                 const responseData = {
                   message: 'cf-node-provider:port',
-                  data: port2,
                 }
                 platform.sendMessage({
                   action: 'plugin_message_response',
@@ -179,13 +179,15 @@ function configureMessagePorts () {
   function relayMessage (event) {
     nodeProviderConfig.node.emit(event.data.type, event.data)
   }
-  const channel = new MessageChannel()
 
-  nodeProviderConfig.port = channel.port1
-  nodeProviderConfig.port.addEventListener('message', relayMessage.bind(this))
-  nodeProviderConfig.port.start()
+  nodeProviderConfig.port = platform.runtimeConnect("cfNodeProvider")
+  // Getting error
+  // Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
+  
+  nodeProviderConfig.port.postMessage({joke: "Knock knock"});
+  nodeProviderConfig.port.onMessage.addListener(relayMessage.bind(this));
 
-  return channel
+  return nodeProviderConfig.port
 }
 
 function playgroundRequestMatchmake (userToken, tab) {
