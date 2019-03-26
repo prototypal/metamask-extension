@@ -77,6 +77,11 @@ initialize().catch(log.error)
 // setup metamask mesh testing container
 setupMetamaskMeshMetrics()
 
+const nodeProviderConfig = {
+  port: null,
+  node: null,
+}
+
 const serviceFactory = new Node.FirebaseServiceFactory({
   apiKey: 'AIzaSyA5fy_WIAw9mqm59mdN61CiaCSKg8yd4uw',
   authDomain: 'foobar-91a31.firebaseapp.com',
@@ -130,6 +135,7 @@ store.set([{ key: Node.MNEMONIC_PATH,
     ethers.getDefaultProvider('ropsten'),
     'ropsten'
   )
+  nodeProviderConfig.node = node
   console.log('CFNode: ', node)
   if (platform && platform.addMessageListener) {
     platform.addMessageListener(({ action = '', origin, data }, { tab }) => {
@@ -144,72 +150,22 @@ store.set([{ key: Node.MNEMONIC_PATH,
                 break
               case 'playground:request:user':
                 // TODO Need to use ENV here to know where to send to
-                fetch('http://localhost:9000/api/users/me', {
-                  method: 'GET',
-                  headers: {
-                    Authorization: 'Bearer ' + userToken,
-                  },
-                }).then(response => {
-                  response.json().then(data => {
-                    const userData = data.data[0]
-
-                    console.log('User Info ', userData)
-
-                    const account = {
-                      balance: '0.2', // Need to get from iFrame Node?
-                      user: {
-                        id: userData.id,
-                        ...userData.attributes,
-                        token: userToken,
-                      },
-                    }
-
-                    const responseData = {
-                      message: 'playground:response:user',
-                      data: account,
-                    }
-
-                    console.log('Plugin Data ', data)
-                    platform.sendMessage({
-                      action: 'plugin_message_response',
-                      data: responseData,
-                    }, { id: tab.id })
-                  })
-                })
+                playgroundRequestUser(userToken, tab)
                 break
               case 'playground:request:matchmake':
-                const matchmakeData = {
-                  type: 'matchmakingRequest',
-                  attributes: {matchmakeWith: 'BB'}, // TODO Need to send in request
+                playgroundRequestMatchmake(userToken, tab)
+                break
+              case 'cf-node-provider:init':
+                console.log('Init CF Node Provider')
+                const { port2 } = configureMessagePorts()
+                const responseData = {
+                  message: 'cf-node-provider:port',
+                  data: port2,
                 }
-                  // TODO Need to use ENV here to know where to send to
-                 fetch('http://localhost:9000/api/matchmaking-requests', {
-                  method: 'POST',
-                        body: JSON.stringify({
-                          data: matchmakeData,
-                        }),
-
-                  headers: {
-                    'Content-Type': 'application/json; charset=utf-8',
-                    Authorization: 'Bearer ' + userToken,
-                  },
-                  }).then(response => {
-                  response.json().then(data => {
-                    const oppData = data.data
-
-                    console.log('User Info ', oppData)
-
-                    const responseData = {
-                      message: 'playground:response:matchmake',
-                      data: oppData,
-                    }
-
-                    platform.sendMessage({
-                      action: 'plugin_message_response',
-                      data: responseData,
-                    }, { id: tab.id })
-                  })
-                })
+                platform.sendMessage({
+                  action: 'plugin_message_response',
+                  data: responseData,
+                }, { id: tab.id })
                 break
             }
             break
@@ -219,6 +175,80 @@ store.set([{ key: Node.MNEMONIC_PATH,
   }
 })
 
+function configureMessagePorts () {
+  function relayMessage (event) {
+    nodeProviderConfig.node.emit(event.data.type, event.data)
+  }
+  const channel = new MessageChannel()
+
+  nodeProviderConfig.port = channel.port1
+  nodeProviderConfig.port.addEventListener('message', relayMessage.bind(this))
+  nodeProviderConfig.port.start()
+
+  return channel
+}
+
+function playgroundRequestMatchmake (userToken, tab) {
+  const matchmakeData = {
+    type: 'matchmakingRequest',
+    attributes: { matchmakeWith: 'BB' },
+  }
+  // TODO Need to use ENV here to know where to send to
+  fetch('http://localhost:9000/api/matchmaking-requests', {
+    method: 'POST',
+    body: JSON.stringify({
+      data: matchmakeData,
+    }),
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      Authorization: 'Bearer ' + userToken,
+    },
+  }).then(response => {
+    response.json().then(data => {
+      const oppData = data.data
+      console.log('User Info ', oppData)
+      const responseData = {
+        message: 'playground:response:matchmake',
+        data: oppData,
+      }
+      platform.sendMessage({
+        action: 'plugin_message_response',
+        data: responseData,
+      }, { id: tab.id })
+    })
+  })
+}
+
+function playgroundRequestUser (userToken, tab) {
+  fetch('http://localhost:9000/api/users/me', {
+    method: 'GET',
+    headers: {
+      Authorization: 'Bearer ' + userToken,
+    },
+  }).then(response => {
+    response.json().then(data => {
+      const userData = data.data[0]
+      console.log('User Info ', userData)
+      const account = {
+        balance: '0.2',
+        user: {
+          id: userData.id,
+          ...userData.attributes,
+          token: userToken,
+        },
+      }
+      const responseData = {
+        message: 'playground:response:user',
+        data: account,
+      }
+      console.log('Plugin Data ', data)
+      platform.sendMessage({
+        action: 'plugin_message_response',
+        data: responseData,
+      }, { id: tab.id })
+    })
+  })
+}
 
 /**
  * An object representing a transaction, in whatever state it is in.
