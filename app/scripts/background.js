@@ -188,6 +188,9 @@ function configureMessagePorts (tabId) {
   nodeProviderConfig.node.on("updateStateEvent", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
   nodeProviderConfig.node.on("uninstallEvent", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
 
+  nodeProviderConfig.node.on("proposeInstallVirtualEvent", event => {
+    console.log("ProposeVirtualInstallEvent", event)
+  })
   const backgroundPort = platform.tabsConnect(tabId, "cfNodeProvider")
   nodeProviderConfig.ports[tabId] = backgroundPort;
   backgroundPort.onMessage.addListener(relayMessage.bind(this))
@@ -196,10 +199,10 @@ function configureMessagePorts (tabId) {
 function playgroundRequestMatchmake (userToken, tab) {
   const matchmakeData = {
     type: 'matchmakingRequest',
-    attributes: { matchmakeWith: 'BB' },
+    attributes: { matchmakeWith: 'HighRollerBot' },
   }
   // TODO Need to use ENV here to know where to send to
-  fetch('http://localhost:9000/api/matchmaking-requests', {
+  fetch('https://server-playground-staging.counterfactual.com/api/matchmaking-requests', {
     method: 'POST',
     body: JSON.stringify({
       data: matchmakeData,
@@ -225,7 +228,7 @@ function playgroundRequestMatchmake (userToken, tab) {
 }
 
 function playgroundRequestUser (userToken, tab) {
-  fetch('http://localhost:9000/api/users/me', {
+  fetch('https://server-playground-staging.counterfactual.com/api/users/me', {
     method: 'GET',
     headers: {
       Authorization: 'Bearer ' + userToken,
