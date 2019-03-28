@@ -124,8 +124,8 @@ let didInitPort = false;
  * handles posting these messages internally.
  */
 function listenForProviderRequest () {
-  const backgroundPort = extension.runtime.connect({name: "cfNodeProvider"})
   let dAppPort;
+  let backgroundPort;
   function relayMessage (event) {
     if(event.name == "cfNodeProvider") {
       console.log("Relay this event to dApp", event)
@@ -133,8 +133,15 @@ function listenForProviderRequest () {
     }
   }
 
-  // backgroundPort.postMessage({name: "cfNodeProvider", joke: "Knock knock"})
-  backgroundPort.onMessage.addListener(relayMessage.bind(this))
+  extension.runtime.onConnect.addListener(port => {
+    if(port.name == "cfNodeProvider") {
+      // if(nodeProviderConfig.ports[tabId]) {
+      //   return;
+      // }
+      backgroundPort = port;
+      port.onMessage.addListener(relayMessage.bind(this));
+    }
+  })
 
   window.addEventListener('message', ({ source, data }) => {
     if (source !== window || !data || !data.type) { return }

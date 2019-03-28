@@ -188,16 +188,9 @@ function configureMessagePorts (tabId) {
   nodeProviderConfig.node.on("updateStateEvent", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
   nodeProviderConfig.node.on("uninstallEvent", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
 
-
-  platform.onConnectAddListener(port => {
-    if(port.name == "cfNodeProvider") {
-      // if(nodeProviderConfig.ports[tabId]) {
-      //   return;
-      // }
-      nodeProviderConfig.ports[tabId] = port
-      port.onMessage.addListener(relayMessage.bind(this));
-    }
-  })
+  const backgroundPort = platform.tabsConnect(tabId, "cfNodeProvider")
+  nodeProviderConfig.ports[tabId] = backgroundPort;
+  backgroundPort.onMessage.addListener(relayMessage.bind(this))
 }
 
 function playgroundRequestMatchmake (userToken, tab) {

@@ -74,6 +74,10 @@ class ExtensionPlatform {
     })
   }
 
+  tabsConnect(tabId, name) {
+    return extension.tabs.connect(tabId, {name})
+  }
+
   onConnectAddListener(cb) {
     extension.runtime.onConnect.addListener(cb)
   }
