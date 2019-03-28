@@ -78,7 +78,7 @@ initialize().catch(log.error)
 setupMetamaskMeshMetrics()
 
 const nodeProviderConfig = {
-  port: null,
+  ports: {},
   node: null,
 }
 
@@ -141,6 +141,7 @@ store.set([{ key: Node.MNEMONIC_PATH,
   if (platform && platform.addMessageListener) {
     platform.addMessageListener(({ action = '', origin, data }, { tab }) => {
       if (tab && tab.id) {
+        configureMessagePorts(tab.id)
         switch (action) {
           case 'plugin_message':
             const userToken = window.localStorage.getItem('playground:user:token')
@@ -158,7 +159,6 @@ store.set([{ key: Node.MNEMONIC_PATH,
                 break
               case 'cf-node-provider:init':
                 console.log('Init CF Node Provider')
-                configureMessagePorts()
                 const responseData = {
                   message: 'cf-node-provider:port',
                 }
@@ -175,19 +175,29 @@ store.set([{ key: Node.MNEMONIC_PATH,
   }
 })
 
-function configureMessagePorts () {
+function configureMessagePorts (tabId) {
   function relayMessage (event) {
     nodeProviderConfig.node.emit(event.data.type, event.data)
   }
 
-  nodeProviderConfig.port = platform.runtimeConnect("cfNodeProvider")
-  // Getting error
-  // Unchecked runtime.lastError: Could not establish connection. Receiving end does not exist.
-  
-  nodeProviderConfig.port.postMessage({joke: "Knock knock"});
-  nodeProviderConfig.port.onMessage.addListener(relayMessage.bind(this));
+  nodeProviderConfig.node.on("proposeInstallVirtual", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
+  nodeProviderConfig.node.on("installVirtualEvent", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
+  nodeProviderConfig.node.on("getAppInstanceDetails", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
+  nodeProviderConfig.node.on("getState", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
+  nodeProviderConfig.node.on("takeAction", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
+  nodeProviderConfig.node.on("updateStateEvent", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
+  nodeProviderConfig.node.on("uninstallEvent", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
 
-  return nodeProviderConfig.port
+
+  platform.onConnectAddListener(port => {
+    if(port.name == "cfNodeProvider") {
+      // if(nodeProviderConfig.ports[tabId]) {
+      //   return;
+      // }
+      nodeProviderConfig.ports[tabId] = port
+      port.onMessage.addListener(relayMessage.bind(this));
+    }
+  })
 }
 
 function playgroundRequestMatchmake (userToken, tab) {

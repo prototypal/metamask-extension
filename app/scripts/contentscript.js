@@ -114,6 +114,9 @@ function setupStreams () {
   mux.ignoreStream('publicConfig')
 }
 
+
+let didInitPort = false;
+
 /**
  * Establishes listeners for requests to fully-enable the provider from the dapp context
  * and for full-provider approvals and rejections from the background script context. Dapps
@@ -121,6 +124,18 @@ function setupStreams () {
  * handles posting these messages internally.
  */
 function listenForProviderRequest () {
+  const backgroundPort = extension.runtime.connect({name: "cfNodeProvider"})
+  let dAppPort;
+  function relayMessage (event) {
+    if(event.name == "cfNodeProvider") {
+      console.log("Relay this event to dApp", event)
+      dAppPort.postMessage(event.event);
+    }
+  }
+
+  // backgroundPort.postMessage({name: "cfNodeProvider", joke: "Knock knock"})
+  backgroundPort.onMessage.addListener(relayMessage.bind(this))
+
   window.addEventListener('message', ({ source, data }) => {
     if (source !== window || !data || !data.type) { return }
     switch (data.type) {
@@ -145,6 +160,9 @@ function listenForProviderRequest () {
         })
         break
       case 'PLUGIN_MESSAGE':
+        if(data.data.message === "cf-node-provider:ready") {
+          // Ideally we need to use a messageQueue and flush it here?
+        }
         extension.runtime.sendMessage({
           action: 'plugin_message',
           data: data.data,
@@ -176,24 +194,36 @@ function listenForProviderRequest () {
         window.postMessage({ type: 'metamasksetlocked' }, '*')
         break
       case 'plugin_message_response':
-        window.postMessage({ type: 'plugin_message_response', data }, '*')
+        if(data.message === "cf-node-provider:port") {
+          if(!didInitPort) {
+            didInitPort = true;
+            const { port1, port2 } = configureMessagePorts(backgroundPort);
+            dAppPort = port1;
+            window.postMessage({ type: 'plugin_message_response', data }, '*', [port2])
+          }
+        } else {
+          window.postMessage({ type: 'plugin_message_response', data }, '*')
+        }
         break
     }
   })
+}
 
-  extension.runtime.onConnect.addListener(port => {
-    // Created this to try to fix error in background script
-    if(port.name == "cfNodeProvider") {
-      port.onMessage.addListener(function(msg) {
-        if (msg.joke == "Knock knock")
-          port.postMessage({question: "Who's there?"});
-        else if (msg.answer == "Madame")
-          port.postMessage({question: "Madame who?"});
-        else if (msg.answer == "Madame... Bovary")
-          port.postMessage({question: "I don't get it."});
-      });
-    }
-  })
+/**
+ * Binds this end of the MessageChannel (aka `port1`) to the dApp
+ * container, and attaches a listener to relay messages via the
+ * EventEmitter.
+ */
+function configureMessagePorts(backgroundPort) {
+  const channel = new MessageChannel();
+
+  const port = channel.port1;
+  port.addEventListener("message", event => {
+    backgroundPort.postMessage({name: "cfNodeProvider", data: event.data})
+  });
+  port.start();
+
+  return channel;
 }
 
 /**

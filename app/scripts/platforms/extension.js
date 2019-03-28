@@ -74,6 +74,10 @@ class ExtensionPlatform {
     })
   }
 
+  onConnectAddListener(cb) {
+    extension.runtime.onConnect.addListener(cb)
+  }
+
   _showConfirmedTransaction (txMeta) {
 
     this._subscribeToNotificationClicked()
