@@ -138,8 +138,8 @@ store.set([{ key: Node.MNEMONIC_PATH,
     {
       STORE_KEY_PREFIX: 'store',
     },
-    ethers.getDefaultProvider('ropsten'),
-    'ropsten'
+    ethers.getDefaultProvider('kovan'),
+    'kovan'
   )
   nodeProviderConfig.node = node
   console.log('CFNode: ', node)
@@ -155,6 +155,17 @@ store.set([{ key: Node.MNEMONIC_PATH,
             switch (data.message) {
               case 'playground:set:user':
                 window.localStorage.setItem('playground:user:token', data.data)
+                break
+              case 'metamask:get:nodeAddress':
+                console.log('Request for Node Public ID')
+                const nodeResponse = {
+                  message: 'metamask:set:nodeAddress',
+                  data: node.publicIdentifier
+                }
+                platform.sendMessage({
+                  action: 'plugin_message_response',
+                  data: nodeResponse,
+                }, { id: tab.id })
                 break
               case 'playground:request:user':
                 // TODO Need to use ENV here to know where to send to
@@ -205,7 +216,7 @@ function configureMessagePorts (tabId) {
 function playgroundRequestMatchmake (userToken, tab) {
   const matchmakeData = {
     type: 'matchmakingRequest',
-    attributes: { matchmakeWith: 'TicTacToeBot' },
+    attributes: { matchmakeWith: 'HighRollerBot' },
   }
   // TODO Need to use ENV here to know where to send to
   fetch('http://localhost:9000/api/matchmaking-requests', {
