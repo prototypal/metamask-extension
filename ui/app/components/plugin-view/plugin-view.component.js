@@ -47,8 +47,8 @@ class IFrameContainer extends React.Component {
    * This component renders just and iframe
    */
   render () {
-    const src = this.props.src
-    // const src = 'http://localhost:3334'
+    // const src = this.props.src
+    const src = 'http://localhost:3334'
     return <iframe src={src} style={{height: '100%'}}/>
   }
 }

@@ -83,12 +83,18 @@ const nodeProviderConfig = {
 }
 
 const serviceFactory = new Node.FirebaseServiceFactory({
-  apiKey: 'AIzaSyA5fy_WIAw9mqm59mdN61CiaCSKg8yd4uw',
-  authDomain: 'foobar-91a31.firebaseapp.com',
-  databaseURL: 'https://foobar-91a31.firebaseio.com',
-  projectId: 'foobar-91a31',
-  storageBucket: 'foobar-91a31.appspot.com',
-  messagingSenderId: '432199632441',
+  // apiKey: 'AIzaSyA5fy_WIAw9mqm59mdN61CiaCSKg8yd4uw',
+  // authDomain: 'foobar-91a31.firebaseapp.com',
+  // databaseURL: 'https://foobar-91a31.firebaseio.com',
+  // projectId: 'foobar-91a31',
+  // storageBucket: 'foobar-91a31.appspot.com',
+  // messagingSenderId: '432199632441',
+  apiKey: "",
+  authDomain: "",
+  databaseURL: `ws://localhost:5555`,
+  projectId: "",
+  storageBucket: "",
+  messagingSenderId: ""
 })
 
 // const store = serviceFactory.createStoreService(uuid.v4())
@@ -199,10 +205,10 @@ function configureMessagePorts (tabId) {
 function playgroundRequestMatchmake (userToken, tab) {
   const matchmakeData = {
     type: 'matchmakingRequest',
-    attributes: { matchmakeWith: 'HighRollerBot' },
+    attributes: { matchmakeWith: 'TicTacToeBot' },
   }
   // TODO Need to use ENV here to know where to send to
-  fetch('https://server-playground-staging.counterfactual.com/api/matchmaking-requests', {
+  fetch('http://localhost:9000/api/matchmaking-requests', {
     method: 'POST',
     body: JSON.stringify({
       data: matchmakeData,
@@ -228,7 +234,7 @@ function playgroundRequestMatchmake (userToken, tab) {
 }
 
 function playgroundRequestUser (userToken, tab) {
-  fetch('https://server-playground-staging.counterfactual.com/api/users/me', {
+  fetch('http://localhost:9000/api/users/me', {
     method: 'GET',
     headers: {
       Authorization: 'Bearer ' + userToken,
