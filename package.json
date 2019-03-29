@@ -80,7 +80,7 @@
     ]
   },
   "dependencies": {
-    "@counterfactual/node": "^0.0.4",
+    "@counterfactual/node": "^0.1.15",
     "@material-ui/core": "1.0.0",
     "@sentry/browser": "^4.1.1",
     "@zxing/library": "^0.8.0",
