@@ -132,13 +132,41 @@ store.set([{ key: Node.MNEMONIC_PATH,
   .then(async () => {
   console.log('Creating Node')
   const messService = serviceFactory.createMessagingService('messaging')
+  const provider = ethers.getDefaultProvider('kovan')
+    provider.getSigner = () => {
+      // Adding getSigner method to provider to "mock" web3 JSONRPC Provider
+      return new Promise((resolve, reject) => {
+        const cb = async event => {
+          if (event.data.type === "plugin_message_response") {
+            if (event.data.data.message === "metamask:response:signer") {
+              window.removeEventListener("message", cb);
+
+              console.log("signer response", event.data);
+              resolve(event.data.data);
+            }
+          }
+        };
+        window.addEventListener("message", cb);
+
+        console.log('Request Provider getSigner')
+        const getSignerMessage = {
+          message: 'metamask:request:signer'
+        }
+        // The below code is failing because tab.id doesn't exist in this scope
+        platform.sendMessage({
+          action: 'plugin_message_response',
+          data: getSignerMessage,
+        }, { id: tab.id })
+
+      });
+    }
   const node = await Node.Node.create(
     messService,
     store,
     {
       STORE_KEY_PREFIX: 'store',
     },
-    ethers.getDefaultProvider('kovan'),
+    provider,
     'kovan'
   )
   nodeProviderConfig.node = node
