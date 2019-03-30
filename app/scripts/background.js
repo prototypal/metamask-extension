@@ -145,7 +145,7 @@ store.set([{ key: Node.MNEMONIC_PATH,
   console.log('CFNode: ', node)
 
   if (platform && platform.addMessageListener) {
-    platform.addMessageListener(({ action = '', origin, data }, { tab }) => {
+    platform.addMessageListener(async ({ action = '', origin, data }, { tab }) => {
       if (tab && tab.id) {
         configureMessagePorts(tab.id)
         switch (action) {
@@ -166,6 +166,54 @@ store.set([{ key: Node.MNEMONIC_PATH,
                   action: 'plugin_message_response',
                   data: nodeResponse,
                 }, { id: tab.id })
+                break
+              case 'metamask:listen:createChannel':
+                console.log('Start observing createChannel')
+                node.once(
+                  Node.EventName.CREATE_CHANNEL,
+                  (data) => {
+                    const nodeResponse = {
+                      message: 'metamask:emit:createChannel',
+                      data
+                    }
+                    platform.sendMessage({
+                      action: 'plugin_message_response',
+                      data: nodeResponse,
+                    }, { id: tab.id })
+                  }
+                );
+                break
+              case 'metamask:request:deposit':
+                console.log('Request to make deposit');
+                node.once(Node.EventName.DEPOSIT_STARTED, args => {
+                  const nodeResponse = {
+                    message: 'metamask:response:deposit',
+                    data: {
+                      ethPendingDepositTxHash: args.txHash,
+                      ethPendingDepositAmountWei: valueInWei
+                    }
+                  }
+                  platform.sendMessage({
+                    action: 'plugin_message_response',
+                    data: nodeResponse,
+                  }, { id: tab.id });
+                });
+            
+                try {
+                  const amount = ethers.utils.bigNumberify(data.valueInWei);
+            
+                  ret = await node.call(Node.MethodName.DEPOSIT, {
+                    type: Node.MethodName.DEPOSIT,
+                    requestId: uuid.v4(),
+                    params: {
+                      amount,
+                      multisigAddress: data.multisigAddress,
+                      notifyCounterparty: true
+                    }
+                  });
+                } catch (e) {
+                  console.error(e);
+                }
                 break
               case 'playground:request:user':
                 // TODO Need to use ENV here to know where to send to
