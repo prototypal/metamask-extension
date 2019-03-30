@@ -158,35 +158,37 @@ store.set([{ key: Node.MNEMONIC_PATH,
                 break
               case 'metamask:get:nodeAddress':
                 console.log('Request for Node Public ID')
-                const nodeResponse = {
+                const nodeAddressResponse = {
                   message: 'metamask:set:nodeAddress',
                   data: node.publicIdentifier
                 }
                 platform.sendMessage({
                   action: 'plugin_message_response',
-                  data: nodeResponse,
+                  data: nodeAddressResponse,
                 }, { id: tab.id })
                 break
               case 'metamask:listen:createChannel':
                 console.log('Start observing createChannel')
+                const NodeEventNameCREATE_CHANNEL = 'createChannelEvent'
                 node.once(
-                  Node.EventName.CREATE_CHANNEL,
+                  NodeEventNameCREATE_CHANNEL,
                   (data) => {
-                    const nodeResponse = {
+                    const channelCreatedResponse = {
                       message: 'metamask:emit:createChannel',
                       data
                     }
                     platform.sendMessage({
                       action: 'plugin_message_response',
-                      data: nodeResponse,
+                      data: channelCreatedResponse,
                     }, { id: tab.id })
                   }
                 );
                 break
               case 'metamask:request:deposit':
                 console.log('Request to make deposit');
-                node.once(Node.EventName.DEPOSIT_STARTED, args => {
-                  const nodeResponse = {
+                const NodeEventNameDEPOSIT_STARTED = 'depositStartedEvent'
+                node.once(NodeEventNameDEPOSIT_STARTED, args => {
+                  const depositStartedResponse = {
                     message: 'metamask:response:deposit',
                     data: {
                       ethPendingDepositTxHash: args.txHash,
@@ -195,15 +197,15 @@ store.set([{ key: Node.MNEMONIC_PATH,
                   }
                   platform.sendMessage({
                     action: 'plugin_message_response',
-                    data: nodeResponse,
+                    data: depositStartedResponse,
                   }, { id: tab.id });
                 });
             
                 try {
                   const amount = ethers.utils.bigNumberify(data.valueInWei);
-            
-                  ret = await node.call(Node.MethodName.DEPOSIT, {
-                    type: Node.MethodName.DEPOSIT,
+                  const NodeMethodNameDEPOSIT = 'deposit'
+                  const depositResponse = await node.call(NodeMethodNameDEPOSIT, {
+                    type: NodeMethodNameDEPOSIT,
                     requestId: uuid.v4(),
                     params: {
                       amount,
@@ -211,6 +213,7 @@ store.set([{ key: Node.MNEMONIC_PATH,
                       notifyCounterparty: true
                     }
                   });
+                  console.log('Deposit Response: ', depositResponse)
                 } catch (e) {
                   console.error(e);
                 }
@@ -224,12 +227,12 @@ store.set([{ key: Node.MNEMONIC_PATH,
                 break
               case 'cf-node-provider:init':
                 console.log('Init CF Node Provider')
-                const responseData = {
+                const nodeProviderInitResponse = {
                   message: 'cf-node-provider:port',
                 }
                 platform.sendMessage({
                   action: 'plugin_message_response',
-                  data: responseData,
+                  data: nodeProviderInitResponse,
                 }, { id: tab.id })
                 break
             }
