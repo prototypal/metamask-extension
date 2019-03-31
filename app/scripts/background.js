@@ -186,6 +186,36 @@ store.set([{ key: Node.MNEMONIC_PATH,
                   });
                 }
 
+                provider.sendTransaction = (signedTransaction) => {
+                  // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
+                  return new Promise((resolve, reject) => {
+                    const cb = async event => {
+                      if (event.data.type === "plugin_message_response") {
+                        if (event.data.data.message === "metamask:response:sendTransaction") {
+                          window.removeEventListener("message", cb);
+            
+                          console.log("sendTransaction response", event.data);
+                          resolve(event.data.data);
+                        }
+                      }
+                    };
+                    window.addEventListener("message", cb);
+            
+                    console.log('Request Provider sendTransaction')
+                    const getSendTransactionMessage = {
+                      message: 'metamask:request:sendTransaction',
+                      data: {
+                        signedTransaction
+                      }
+                    }
+                    // The below code is failing because tab.id doesn't exist in this scope
+                    platform.sendMessage({
+                      action: 'plugin_message_response',
+                      data: getSendTransactionMessage,
+                    }, { id: tab.id })
+                  });
+                }
+
                 const setupResponse = {
                   message: 'metamask:setup:complete',
                   data: {}
