@@ -185,20 +185,20 @@ store.set([{ key: Node.MNEMONIC_PATH,
                       }, { id: tab.id })
                     });
                   }
-                  provider.sendTransaction = (signedTransaction) => {
+                  mockSigner.sendTransaction = (signedTransaction) => {
                     // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
                     return new Promise((resolve, reject) => {
-                      const cb = async event => {
+                      const sendTransactionCb = async event => {
                         if (event.data.type === "plugin_message_response") {
                           if (event.data.data.message === "metamask:response:signer:sendTransaction") {
-                            window.removeEventListener("message", cb);
+                            platform.removeMessageListener(sendTransactionCb);
               
                             console.log("sendTransaction response", event.data);
                             resolve(event.data.data);
                           }
                         }
                       };
-                      window.addEventListener("message", cb);
+                      platform.addMessageListener(sendTransactionCb);
               
                       console.log('Request Provider sendTransaction')
                       const getSendTransactionMessage = {
@@ -214,6 +214,34 @@ store.set([{ key: Node.MNEMONIC_PATH,
                     });
                   }
                   return mockSigner
+                }
+                provider.sendTransaction = (signedTransaction) => {
+                  // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
+                  return new Promise((resolve, reject) => {
+                    const sendTransactionCb = async event => {
+                      if (event.data.type === "plugin_message_response") {
+                        if (event.data.data.message === "metamask:response:signer:sendTransaction") {
+                          platform.removeMessageListener(sendTransactionCb);
+            
+                          console.log("sendTransaction response", event.data);
+                          resolve(event.data.data);
+                        }
+                      }
+                    };
+                    platform.addMessageListener(sendTransactionCb);
+            
+                    console.log('Request Provider sendTransaction')
+                    const getSendTransactionMessage = {
+                      message: 'metamask:request:signer:sendTransaction',
+                      data: {
+                        signedTransaction
+                      }
+                    }
+                    platform.sendMessage({
+                      action: 'plugin_message_response',
+                      data: getSendTransactionMessage,
+                    }, { id: tab.id })
+                  });
                 }
 
                 const setupResponse = {
