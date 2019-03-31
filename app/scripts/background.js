@@ -160,60 +160,60 @@ store.set([{ key: Node.MNEMONIC_PATH,
                 break
               case 'metamask:setup:initiate':
                 provider.getSigner = () => {
-                  // Adding getSigner method to provider to "mock" web3 JSONRPC Provider
-                  return new Promise((resolve, reject) => {
-                    const cb = async event => {
-                      if (event.data.type === "plugin_message_response") {
-                        if (event.data.data.message === "metamask:response:signer") {
-                          window.removeEventListener("message", cb);
+                  const mockSigner = {}
+                  mockSigner.getAddress = () => {
+                    // Adding getSigner method to provider to "mock" web3 JSONRPC Provider
+                    return new Promise((resolve, reject) => {
+                      const getAddressCB = event => {
+                        console.log("getAddress Event: ", event)
+                        if (event.data.message === 'metamask:response:signer:address') {
+                          platform.removeMessageListener(getAddressCB);
             
-                          console.log("signer response", event.data);
+                          console.log('signer address response', event);
                           resolve(event.data.data);
                         }
+                      };
+                      platform.addMessageListener(getAddressCB);
+              
+                      console.log('Request Provider getSigner address')
+                      const getSignerAddressMessage = {
+                        message: 'metamask:request:signer:address'
                       }
-                    };
-                    window.addEventListener("message", cb);
-            
-                    console.log('Request Provider getSigner')
-                    const getSignerMessage = {
-                      message: 'metamask:request:signer'
-                    }
-                    // The below code is failing because tab.id doesn't exist in this scope
-                    platform.sendMessage({
-                      action: 'plugin_message_response',
-                      data: getSignerMessage,
-                    }, { id: tab.id })
-                  });
-                }
-
-                provider.sendTransaction = (signedTransaction) => {
-                  // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
-                  return new Promise((resolve, reject) => {
-                    const cb = async event => {
-                      if (event.data.type === "plugin_message_response") {
-                        if (event.data.data.message === "metamask:response:sendTransaction") {
-                          window.removeEventListener("message", cb);
-            
-                          console.log("sendTransaction response", event.data);
-                          resolve(event.data.data);
+                      platform.sendMessage({
+                        action: 'plugin_message_response',
+                        data: getSignerAddressMessage,
+                      }, { id: tab.id })
+                    });
+                  }
+                  provider.sendTransaction = (signedTransaction) => {
+                    // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
+                    return new Promise((resolve, reject) => {
+                      const cb = async event => {
+                        if (event.data.type === "plugin_message_response") {
+                          if (event.data.data.message === "metamask:response:signer:sendTransaction") {
+                            window.removeEventListener("message", cb);
+              
+                            console.log("sendTransaction response", event.data);
+                            resolve(event.data.data);
+                          }
+                        }
+                      };
+                      window.addEventListener("message", cb);
+              
+                      console.log('Request Provider sendTransaction')
+                      const getSendTransactionMessage = {
+                        message: 'metamask:request:signer:sendTransaction',
+                        data: {
+                          signedTransaction
                         }
                       }
-                    };
-                    window.addEventListener("message", cb);
-            
-                    console.log('Request Provider sendTransaction')
-                    const getSendTransactionMessage = {
-                      message: 'metamask:request:sendTransaction',
-                      data: {
-                        signedTransaction
-                      }
-                    }
-                    // The below code is failing because tab.id doesn't exist in this scope
-                    platform.sendMessage({
-                      action: 'plugin_message_response',
-                      data: getSendTransactionMessage,
-                    }, { id: tab.id })
-                  });
+                      platform.sendMessage({
+                        action: 'plugin_message_response',
+                        data: getSendTransactionMessage,
+                      }, { id: tab.id })
+                    });
+                  }
+                  return mockSigner
                 }
 
                 const setupResponse = {
