@@ -64,6 +64,10 @@ class ExtensionPlatform {
     extension.runtime.onMessage.addListener(cb)
   }
 
+  removeMessageListener (cb) {
+    extension.runtime.onMessage.removeListener(cb)
+  }
+
   sendMessage (message, query = {}) {
     const id = query.id
     delete query.id
