@@ -189,13 +189,15 @@ store.set([{ key: Node.MNEMONIC_PATH,
                     // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
                     return new Promise((resolve, reject) => {
                       const sendTransactionCb = async event => {
-                        if (event.data.type === "plugin_message_response") {
-                          if (event.data.data.message === "metamask:response:signer:sendTransaction") {
-                            platform.removeMessageListener(sendTransactionCb);
+                        if (event.data.message === "metamask:response:signer:sendTransaction") {
+                          platform.removeMessageListener(sendTransactionCb);
+                          const transaction = event.data.data;
+                          transaction.gasLimit = ethers.utils.bigNumberify(transaction.gasLimit._hex);
+                          transaction.gasPrice = ethers.utils.bigNumberify(transaction.gasPrice._hex);
+                          transaction.value = ethers.utils.bigNumberify(transaction.value._hex)
               
-                            console.log("sendTransaction response", event.data);
-                            resolve(event.data.data);
-                          }
+                          console.log("sendTransaction response", transaction);
+                          resolve(transaction);
                         }
                       };
                       platform.addMessageListener(sendTransactionCb);
@@ -214,34 +216,6 @@ store.set([{ key: Node.MNEMONIC_PATH,
                     });
                   }
                   return mockSigner
-                }
-                provider.sendTransaction = (signedTransaction) => {
-                  // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
-                  return new Promise((resolve, reject) => {
-                    const sendTransactionCb = async event => {
-                      if (event.data.type === "plugin_message_response") {
-                        if (event.data.data.message === "metamask:response:signer:sendTransaction") {
-                          platform.removeMessageListener(sendTransactionCb);
-            
-                          console.log("sendTransaction response", event.data);
-                          resolve(event.data.data);
-                        }
-                      }
-                    };
-                    platform.addMessageListener(sendTransactionCb);
-            
-                    console.log('Request Provider sendTransaction')
-                    const getSendTransactionMessage = {
-                      message: 'metamask:request:signer:sendTransaction',
-                      data: {
-                        signedTransaction
-                      }
-                    }
-                    platform.sendMessage({
-                      action: 'plugin_message_response',
-                      data: getSendTransactionMessage,
-                    }, { id: tab.id })
-                  });
                 }
 
                 const setupResponse = {
@@ -262,6 +236,26 @@ store.set([{ key: Node.MNEMONIC_PATH,
                 platform.sendMessage({
                   action: 'plugin_message_response',
                   data: nodeAddressResponse,
+                }, { id: tab.id })
+                break
+              case 'metamask:request:balances':
+                console.log('Request for balances', data)
+
+                const query = {
+                  type: "getFreeBalanceState",
+                  requestId: uuid.v4(),
+                  params: { multisigAddress: data.multisigAddress }
+                };
+            
+                let response = await node.call(query.type, query);
+
+                const balancesResponse = {
+                  message: 'metamask:response:balances',
+                  data: response.result.state
+                }
+                platform.sendMessage({
+                  action: 'plugin_message_response',
+                  data: balancesResponse,
                 }, { id: tab.id })
                 break
               case 'metamask:listen:createChannel':
@@ -285,11 +279,12 @@ store.set([{ key: Node.MNEMONIC_PATH,
                 console.log('Request to make deposit');
                 const NodeEventNameDEPOSIT_STARTED = 'depositStartedEvent'
                 node.once(NodeEventNameDEPOSIT_STARTED, args => {
+                  console.log("depositStartedEvent", args)
                   const depositStartedResponse = {
                     message: 'metamask:response:deposit',
                     data: {
                       ethPendingDepositTxHash: args.txHash,
-                      ethPendingDepositAmountWei: valueInWei
+                      ethPendingDepositAmountWei: args.value
                     }
                   }
                   platform.sendMessage({
