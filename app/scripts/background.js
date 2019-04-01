@@ -166,7 +166,7 @@ store.set([{ key: Node.MNEMONIC_PATH,
                     return new Promise((resolve, reject) => {
                       const getAddressCB = event => {
                         console.log("getAddress Event: ", event)
-                        if (event.data.message === 'metamask:response:signer:address') {
+                        if (event.data && event.data.message === 'metamask:response:signer:address') {
                           platform.removeMessageListener(getAddressCB);
             
                           console.log('signer address response', event);
@@ -189,7 +189,7 @@ store.set([{ key: Node.MNEMONIC_PATH,
                     // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
                     return new Promise((resolve, reject) => {
                       const sendTransactionCb = async event => {
-                        if (event.data.message === "metamask:response:signer:sendTransaction") {
+                        if (event.data && event.data.message === "metamask:response:signer:sendTransaction") {
                           platform.removeMessageListener(sendTransactionCb);
                           const transaction = event.data.data;
                           transaction.gasLimit = ethers.utils.bigNumberify(transaction.gasLimit._hex);
