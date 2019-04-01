@@ -126,6 +126,7 @@ let didInitPort = false;
 function listenForProviderRequest () {
   let dAppPort;
   let backgroundPort;
+  let eventListenerHolder = []
   function relayMessage (event) {
     if(event.name == "cfNodeProvider") {
       console.log("Relay this event to dApp", event)
@@ -138,8 +139,12 @@ function listenForProviderRequest () {
       // if(nodeProviderConfig.ports[tabId]) {
       //   return;
       // }
+      if(eventListenerHolder.includes(port.sender.id)) {
+        return;
+      }
       backgroundPort = port;
       port.onMessage.addListener(relayMessage.bind(this));
+      eventListenerHolder.push(port.sender.id)
     }
   })
 

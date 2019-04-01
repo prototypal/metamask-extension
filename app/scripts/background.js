@@ -146,10 +146,15 @@ store.set([{ key: Node.MNEMONIC_PATH,
   nodeProviderConfig.node = node
   console.log('CFNode: ', node)
 
+  const messagePortConfigured = []
+
   if (platform && platform.addMessageListener) {
     platform.addMessageListener(async ({ action = '', origin, data }, { tab }) => {
       if (tab && tab.id) {
-        configureMessagePorts(tab.id)
+        if(!messagePortConfigured.includes(tab.id)) {
+          configureMessagePorts(tab.id)
+          messagePortConfigured.push(tab.id)
+        }
         switch (action) {
           case 'plugin_message':
             const userToken = window.localStorage.getItem('playground:user:token')
@@ -336,17 +341,53 @@ store.set([{ key: Node.MNEMONIC_PATH,
 })
 
 function configureMessagePorts (tabId) {
+  const eventHolder = {}
   function relayMessage (event) {
     nodeProviderConfig.node.emit(event.data.type, event.data)
   }
 
-  nodeProviderConfig.node.on("proposeInstallVirtual", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
-  nodeProviderConfig.node.on("installVirtualEvent", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
-  nodeProviderConfig.node.on("getAppInstanceDetails", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
-  nodeProviderConfig.node.on("getState", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
-  nodeProviderConfig.node.on("takeAction", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
-  nodeProviderConfig.node.on("updateStateEvent", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
-  nodeProviderConfig.node.on("uninstallEvent", event => { nodeProviderConfig.ports[tabId].postMessage({name: "cfNodeProvider", event}); });
+  nodeProviderConfig.node.on("proposeInstallVirtual", event => {
+    if (eventHolder[event.requestId] !== event.type) {
+      eventHolder[event.requestId] = event.type
+      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
+    }
+  });
+  nodeProviderConfig.node.on("installVirtualEvent", event => {
+    if (eventHolder[event.requestId] !== event.type) {
+      eventHolder[event.requestId] = event.type
+      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
+    }
+  });
+  nodeProviderConfig.node.on("getAppInstanceDetails", event => {
+    if (eventHolder[event.requestId] !== event.type) {
+      eventHolder[event.requestId] = event.type
+      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
+    }
+  });
+  nodeProviderConfig.node.on("getState", event => {
+    if (eventHolder[event.requestId] !== event.type) {
+      eventHolder[event.requestId] = event.type
+      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
+    }
+  });
+  nodeProviderConfig.node.on("takeAction", event => {
+    if (eventHolder[event.requestId] !== event.type) {
+      eventHolder[event.requestId] = event.type
+      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
+    }
+  });
+  nodeProviderConfig.node.on("updateStateEvent", event => {
+    if (eventHolder[event.requestId] !== event.type) {
+      eventHolder[event.requestId] = event.type
+      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
+    }
+  });
+  nodeProviderConfig.node.on("uninstallEvent", event => {
+    if (eventHolder[event.requestId] !== event.type) {
+      eventHolder[event.requestId] = event.type
+      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
+    }
+  });
 
   nodeProviderConfig.node.on("proposeInstallVirtualEvent", event => {
     console.log("ProposeVirtualInstallEvent", event)
