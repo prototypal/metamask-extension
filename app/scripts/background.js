@@ -338,60 +338,43 @@ store.set([{ key: Node.MNEMONIC_PATH,
 })
 
 function configureMessagePorts (tabId) {
-  const eventHolder = {}
-  function relayMessage (event) {
+  const eventHolder = []
+  function relayMessageToNode (event) {
     nodeProviderConfig.node.emit(event.data.type, event.data)
   }
 
-  nodeProviderConfig.node.on("proposeInstallVirtual", event => {
-    if (eventHolder[event.requestId] !== event.type) {
-      eventHolder[event.requestId] = event.type
-      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
+  function relayMessageToDapp (event) {
+    try {
+      if (!eventHolder.includes(event.type)) {
+        // We only allow the same event type to be called in 20ms intervals to prevent multiple
+        // messages being emitted for the same event
+        eventHolder.push(event.type)
+        nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
+        window.setTimeout(() => {
+            eventHolder.pop(event.type)
+          },20)
+        }
+    } catch (error) {
+      // There is sometimes a race condition where nodeProviderConfig.ports[tabId] is undefined
+      debugger;
     }
-  });
-  nodeProviderConfig.node.on("installVirtualEvent", event => {
-    if (eventHolder[event.requestId] !== event.type) {
-      eventHolder[event.requestId] = event.type
-      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
-    }
-  });
-  nodeProviderConfig.node.on("getAppInstanceDetails", event => {
-    if (eventHolder[event.requestId] !== event.type) {
-      eventHolder[event.requestId] = event.type
-      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
-    }
-  });
-  nodeProviderConfig.node.on("getState", event => {
-    if (eventHolder[event.requestId] !== event.type) {
-      eventHolder[event.requestId] = event.type
-      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
-    }
-  });
-  nodeProviderConfig.node.on("takeAction", event => {
-    if (eventHolder[event.requestId] !== event.type) {
-      eventHolder[event.requestId] = event.type
-      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
-    }
-  });
-  nodeProviderConfig.node.on("updateStateEvent", event => {
-    if (eventHolder[event.requestId] !== event.type) {
-      eventHolder[event.requestId] = event.type
-      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
-    }
-  });
-  nodeProviderConfig.node.on("uninstallEvent", event => {
-    if (eventHolder[event.requestId] !== event.type) {
-      eventHolder[event.requestId] = event.type
-      nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
-    }
-  });
+     
+  }
+
+  nodeProviderConfig.node.on("proposeInstallVirtual", relayMessageToDapp.bind(this));
+  nodeProviderConfig.node.on("installVirtualEvent", relayMessageToDapp.bind(this));
+  nodeProviderConfig.node.on("getAppInstanceDetails", relayMessageToDapp.bind(this));
+  nodeProviderConfig.node.on("getState", relayMessageToDapp.bind(this));
+  nodeProviderConfig.node.on("takeAction", relayMessageToDapp.bind(this));
+  nodeProviderConfig.node.on("updateStateEvent", relayMessageToDapp.bind(this));
+  nodeProviderConfig.node.on("uninstallEvent", relayMessageToDapp.bind(this));
 
   nodeProviderConfig.node.on("proposeInstallVirtualEvent", event => {
     console.log("ProposeVirtualInstallEvent", event)
   })
   const backgroundPort = platform.tabsConnect(tabId, "cfNodeProvider")
   nodeProviderConfig.ports[tabId] = backgroundPort;
-  backgroundPort.onMessage.addListener(relayMessage.bind(this))
+  backgroundPort.onMessage.addListener(relayMessageToNode.bind(this))
   backgroundPort.onDisconnect.addListener(() => {
     delete nodeProviderConfig.ports[tabId]
   })
