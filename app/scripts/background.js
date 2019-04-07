@@ -146,14 +146,11 @@ store.set([{ key: Node.MNEMONIC_PATH,
   nodeProviderConfig.node = node
   console.log('CFNode: ', node)
 
-  const messagePortConfigured = []
-
   if (platform && platform.addMessageListener) {
     platform.addMessageListener(async ({ action = '', origin, data }, { tab }) => {
       if (tab && tab.id) {
-        if(!messagePortConfigured.includes(tab.id)) {
+        if(!nodeProviderConfig.ports[tab.id]) {
           configureMessagePorts(tab.id)
-          messagePortConfigured.push(tab.id)
         }
         switch (action) {
           case 'plugin_message':
@@ -395,6 +392,9 @@ function configureMessagePorts (tabId) {
   const backgroundPort = platform.tabsConnect(tabId, "cfNodeProvider")
   nodeProviderConfig.ports[tabId] = backgroundPort;
   backgroundPort.onMessage.addListener(relayMessage.bind(this))
+  backgroundPort.onDisconnect.addListener(() => {
+    delete nodeProviderConfig.ports[tabId]
+  })
 }
 
 function playgroundRequestMatchmake (userToken, tab) {
