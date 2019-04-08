@@ -80,6 +80,7 @@ setupMetamaskMeshMetrics()
 const nodeProviderConfig = {
   ports: {},
   node: null,
+  eventHolder: {}
 }
 
 const serviceFactory = new Node.FirebaseServiceFactory({
@@ -338,20 +339,20 @@ store.set([{ key: Node.MNEMONIC_PATH,
 })
 
 function configureMessagePorts (tabId) {
-  const eventHolder = []
+  nodeProviderConfig.eventHolder[tabId] = [];
   function relayMessageToNode (event) {
     nodeProviderConfig.node.emit(event.data.type, event.data)
   }
 
   function relayMessageToDapp (event) {
     try {
-      if (!eventHolder.includes(event.type)) {
+      if (!nodeProviderConfig.eventHolder[tabId].includes(event.type)) {
         // We only allow the same event type to be called in 20ms intervals to prevent multiple
         // messages being emitted for the same event
-        eventHolder.push(event.type)
+        nodeProviderConfig.eventHolder[tabId].push(event.type)
         nodeProviderConfig.ports[tabId].postMessage({ name: "cfNodeProvider", event });
         window.setTimeout(() => {
-            eventHolder.pop(event.type)
+          nodeProviderConfig.eventHolder[tabId].pop(event.type)
           },20)
         }
     } catch (error) {
