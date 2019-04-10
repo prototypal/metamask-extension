@@ -47,9 +47,7 @@ class IFrameContainer extends React.Component {
    * This component renders just and iframe
    */
   render () {
-    // const src = this.props.src
-    const src = 'http://localhost:3334'
-    return <iframe src={src} style={{height: '100%'}}/>
+    return <iframe src={this.props.src} style={{height: '100%'}}/>
   }
 }
 
@@ -140,6 +138,10 @@ export default class PluginView extends PureComponent {
 
   render () {
     console.log('PROPS in plugin view', this.props)
+        // const src = this.props.src
+    // const src = 'http://localhost:3334'
+    const src = this.props.selectedPluginScript.src || 'https://awesome-johnson-66964e.netlify.com'
+
     // if (this.props.selectedPluginScript) {
     //   console.log(this.props.selectedPluginScript.pluginInterface)
     // }
@@ -156,7 +158,7 @@ export default class PluginView extends PureComponent {
         <div> plugin uid: {this.props.selectedPluginUid} </div>
         <div> {this.renderPluginButtons.bind(this)()} </div>
         <div>*/}
-          <IFrameContainer src={this.props.selectedPluginScript.src} />
+          <IFrameContainer src={src} />
         {/* </div>*/}
       </div>
     )

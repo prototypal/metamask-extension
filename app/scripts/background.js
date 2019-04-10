@@ -84,18 +84,18 @@ const nodeProviderConfig = {
 }
 
 const serviceFactory = new Node.FirebaseServiceFactory({
-  // apiKey: 'AIzaSyA5fy_WIAw9mqm59mdN61CiaCSKg8yd4uw',
-  // authDomain: 'foobar-91a31.firebaseapp.com',
-  // databaseURL: 'https://foobar-91a31.firebaseio.com',
-  // projectId: 'foobar-91a31',
-  // storageBucket: 'foobar-91a31.appspot.com',
-  // messagingSenderId: '432199632441',
-  apiKey: "",
-  authDomain: "",
-  databaseURL: `ws://localhost:5555`,
-  projectId: "",
-  storageBucket: "",
-  messagingSenderId: ""
+  apiKey: 'AIzaSyA5fy_WIAw9mqm59mdN61CiaCSKg8yd4uw',
+  authDomain: 'foobar-91a31.firebaseapp.com',
+  databaseURL: 'https://foobar-91a31.firebaseio.com',
+  projectId: 'foobar-91a31',
+  storageBucket: 'foobar-91a31.appspot.com',
+  messagingSenderId: '432199632441',
+  // apiKey: "",
+  // authDomain: "",
+  // databaseURL: `ws://localhost:5555`,
+  // projectId: "",
+  // storageBucket: "",
+  // messagingSenderId: ""
 })
 
 // const store = serviceFactory.createStoreService(uuid.v4())
@@ -128,8 +128,18 @@ const store = {
       return true
   },
 }
+
+// let mnemonic = await storeService.get(MNEMONIC_PATH);
+
+//   if (!mnemonic) {
+//     mnemonic = Wallet.createRandom().mnemonic;
+//     await storeService.set([{ key: MNEMONIC_PATH, value: mnemonic }]);
+//   }
+
+const nodeMnemonic = window.localStorage.getItem('MNEMONIC_PATH') || ethers.Wallet.createRandom().mnemonic
+
 store.set([{ key: Node.MNEMONIC_PATH,
-  value: 'barely neck sample owner boost category harbor shield hollow half crack shine' }])
+  value: nodeMnemonic }])
   .then(async () => {
   console.log('Creating Node')
   const messService = serviceFactory.createMessagingService('messaging')
