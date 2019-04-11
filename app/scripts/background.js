@@ -137,7 +137,8 @@ const store = {
   },
 }
 
-const nodeMnemonic = window.localStorage.getItem('MNEMONIC_PATH') || ethers.Wallet.createRandom().mnemonic
+const nodeMnemonic = 
+  JSON.parse(window.localStorage.getItem(Node.MNEMONIC_PATH)) || ethers.Wallet.createRandom().mnemonic
 
 store.set([{ key: Node.MNEMONIC_PATH,
   value: nodeMnemonic }])
