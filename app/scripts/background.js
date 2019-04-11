@@ -129,13 +129,6 @@ const store = {
   },
 }
 
-// let mnemonic = await storeService.get(MNEMONIC_PATH);
-
-//   if (!mnemonic) {
-//     mnemonic = Wallet.createRandom().mnemonic;
-//     await storeService.set([{ key: MNEMONIC_PATH, value: mnemonic }]);
-//   }
-
 const nodeMnemonic = window.localStorage.getItem('MNEMONIC_PATH') || ethers.Wallet.createRandom().mnemonic
 
 store.set([{ key: Node.MNEMONIC_PATH,
