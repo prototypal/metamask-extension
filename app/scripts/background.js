@@ -143,21 +143,8 @@ const nodeMnemonic =
 store.set([{ key: Node.MNEMONIC_PATH,
   value: nodeMnemonic }])
   .then(async () => {
-  console.log('Creating Node')
-  const messService = serviceFactory.createMessagingService('messaging')
-  const provider = ethers.getDefaultProvider('kovan')
-
-  const node = await Node.Node.create(
-    messService,
-    store,
-    {
-      STORE_KEY_PREFIX: 'store',
-    },
-    provider,
-    'kovan'
-  )
+  const { node, provider } = await createNode();
   nodeProviderConfig.node = node
-  console.log('CFNode: ', node)
 
   if (platform && platform.addMessageListener) {
     platform.addMessageListener(async ({ action = '', origin, data }, { tab }) => {
@@ -165,190 +152,215 @@ store.set([{ key: Node.MNEMONIC_PATH,
         if(!nodeProviderConfig.ports[tab.id]) {
           configureMessagePorts(tab.id)
         }
-        switch (action) {
-          case 'plugin_message':
-            const userToken = window.localStorage.getItem('playground:user:token')
+        if(action === 'plugin_message') {
+          const userToken = window.localStorage.getItem('playground:user:token')
 
-            switch (data.message) {
-              case 'playground:set:user':
-                window.localStorage.setItem('playground:user:token', data.data)
-                break
-              case 'metamask:setup:initiate':
-                provider.getSigner = () => {
-                  const mockSigner = {}
-                  mockSigner.getAddress = () => {
-                    // Adding getSigner method to provider to "mock" web3 JSONRPC Provider
-                    return new Promise((resolve, reject) => {
-                      const getAddressCB = event => {
-                        console.log("getAddress Event: ", event)
-                        if (event.data && event.data.message === 'metamask:response:signer:address') {
-                          platform.removeMessageListener(getAddressCB);
-            
-                          console.log('signer address response', event);
-                          resolve(event.data.data);
-                        }
-                      };
-                      platform.addMessageListener(getAddressCB);
-              
-                      console.log('Request Provider getSigner address')
-                      const getSignerAddressMessage = {
-                        message: 'metamask:request:signer:address'
-                      }
-                      platform.sendMessage({
-                        action: 'plugin_message_response',
-                        data: getSignerAddressMessage,
-                      }, { id: tab.id })
-                    });
-                  }
-                  mockSigner.sendTransaction = (signedTransaction) => {
-                    // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
-                    return new Promise((resolve, reject) => {
-                      const sendTransactionCb = async event => {
-                        if (event.data && event.data.message === "metamask:response:signer:sendTransaction") {
-                          platform.removeMessageListener(sendTransactionCb);
-                          const transaction = event.data.data;
-                          transaction.gasLimit = ethers.utils.bigNumberify(transaction.gasLimit._hex);
-                          transaction.gasPrice = ethers.utils.bigNumberify(transaction.gasPrice._hex);
-                          transaction.value = ethers.utils.bigNumberify(transaction.value._hex)
-              
-                          console.log("sendTransaction response", transaction);
-                          resolve(transaction);
-                        }
-                      };
-                      platform.addMessageListener(sendTransactionCb);
-              
-                      console.log('Request Provider sendTransaction')
-                      const getSendTransactionMessage = {
-                        message: 'metamask:request:signer:sendTransaction',
-                        data: {
-                          signedTransaction
-                        }
-                      }
-                      platform.sendMessage({
-                        action: 'plugin_message_response',
-                        data: getSendTransactionMessage,
-                      }, { id: tab.id })
-                    });
-                  }
-                  return mockSigner
-                }
-
-                const setupResponse = {
-                  message: 'metamask:setup:complete',
-                  data: {}
-                }
-                platform.sendMessage({
-                  action: 'plugin_message_response',
-                  data: setupResponse,
-                }, { id: tab.id })
-                break;
-              case 'metamask:get:nodeAddress':
-                console.log('Request for Node Public ID')
-                const nodeAddressResponse = {
-                  message: 'metamask:set:nodeAddress',
-                  data: node.publicIdentifier
-                }
-                platform.sendMessage({
-                  action: 'plugin_message_response',
-                  data: nodeAddressResponse,
-                }, { id: tab.id })
-                break
-              case 'metamask:request:balances':
-                console.log('Request for balances', data)
-
-                const query = {
-                  type: "getFreeBalanceState",
-                  requestId: uuid.v4(),
-                  params: { multisigAddress: data.multisigAddress }
-                };
-            
-                let response = await node.call(query.type, query);
-
-                const balancesResponse = {
-                  message: 'metamask:response:balances',
-                  data: response.result.state
-                }
-                platform.sendMessage({
-                  action: 'plugin_message_response',
-                  data: balancesResponse,
-                }, { id: tab.id })
-                break
-              case 'metamask:listen:createChannel':
-                console.log('Start observing createChannel')
-                const NodeEventNameCREATE_CHANNEL = 'createChannelEvent'
-                node.once(
-                  NodeEventNameCREATE_CHANNEL,
-                  (data) => {
-                    const channelCreatedResponse = {
-                      message: 'metamask:emit:createChannel',
-                      data
-                    }
-                    platform.sendMessage({
-                      action: 'plugin_message_response',
-                      data: channelCreatedResponse,
-                    }, { id: tab.id })
-                  }
-                );
-                break
-              case 'metamask:request:deposit':
-                console.log('Request to make deposit');
-                const NodeEventNameDEPOSIT_STARTED = 'depositStartedEvent'
-                node.once(NodeEventNameDEPOSIT_STARTED, args => {
-                  console.log("depositStartedEvent", args)
-                  const depositStartedResponse = {
-                    message: 'metamask:response:deposit',
-                    data: {
-                      ethPendingDepositTxHash: args.txHash,
-                      ethPendingDepositAmountWei: args.value
-                    }
-                  }
-                  platform.sendMessage({
-                    action: 'plugin_message_response',
-                    data: depositStartedResponse,
-                  }, { id: tab.id });
-                });
-            
-                try {
-                  const amount = ethers.utils.bigNumberify(data.valueInWei);
-                  const NodeMethodNameDEPOSIT = 'deposit'
-                  const depositResponse = await node.call(NodeMethodNameDEPOSIT, {
-                    type: NodeMethodNameDEPOSIT,
-                    requestId: uuid.v4(),
-                    params: {
-                      amount,
-                      multisigAddress: data.multisigAddress,
-                      notifyCounterparty: true
-                    }
-                  });
-                  console.log('Deposit Response: ', depositResponse)
-                } catch (e) {
-                  console.error(e);
-                }
-                break
-              case 'playground:request:user':
-                // TODO Need to use ENV here to know where to send to
-                playgroundRequestUser(userToken, tab)
-                break
-              case 'playground:request:matchmake':
-                playgroundRequestMatchmake(userToken, tab)
-                break
-              case 'cf-node-provider:init':
-                console.log('Init CF Node Provider')
-                const nodeProviderInitResponse = {
-                  message: 'cf-node-provider:port',
-                }
-                platform.sendMessage({
-                  action: 'plugin_message_response',
-                  data: nodeProviderInitResponse,
-                }, { id: tab.id })
-                break
-            }
-            break
+          await handlePluginMessage(data, provider, tab, nodeProviderConfig.node, userToken);
         }
       }
     })
   }
 })
+
+async function createNode() {
+  console.log('Creating Node');
+  const messService = serviceFactory.createMessagingService('messaging');
+  const provider = ethers.getDefaultProvider('kovan');
+  const node = await Node.Node.create(messService, store, {
+    STORE_KEY_PREFIX: 'store',
+  }, provider, 'kovan');
+  console.log('CFNode: ', node)
+  return { node, provider };
+}
+
+async function handlePluginMessage(data, provider, tab, node, userToken) {
+  switch (data.message) {
+    case 'playground:set:user':
+      window.localStorage.setItem('playground:user:token', data.data);
+      break;
+    case 'metamask:setup:initiate':
+      metamaskSetupInit(provider, tab);
+      break;
+    case 'metamask:get:nodeAddress':
+      metamaskGetNodeAddress(node, tab);
+      break;
+    case 'metamask:request:balances':
+      await metamaskRequestBalances(data, node, tab);
+      break;
+    case 'metamask:listen:createChannel':
+      metamaskListenCreateChannel(node, tab);
+      break;
+    case 'metamask:request:deposit':
+      await metamaskRequestDeposit(node, tab, data);
+      break;
+    case 'playground:request:user':
+      playgroundRequestUser(userToken, tab);
+      break;
+    case 'playground:request:matchmake':
+      playgroundRequestMatchmake(userToken, tab);
+      break;
+    case 'cf-node-provider:init':
+      cfNodeProviderInit(tab);
+      break;
+  }
+}
+
+function cfNodeProviderInit(tab) {
+  console.log('Init CF Node Provider');
+  const nodeProviderInitResponse = {
+    message: 'cf-node-provider:port',
+  };
+  platform.sendMessage({
+    action: 'plugin_message_response',
+    data: nodeProviderInitResponse,
+  }, { id: tab.id });
+}
+
+async function metamaskRequestDeposit(node, tab, data) {
+  console.log('Request to make deposit');
+  const NodeEventNameDEPOSIT_STARTED = 'depositStartedEvent';
+  node.once(NodeEventNameDEPOSIT_STARTED, args => {
+    console.log("depositStartedEvent", args);
+    const depositStartedResponse = {
+      message: 'metamask:response:deposit',
+      data: {
+        ethPendingDepositTxHash: args.txHash,
+        ethPendingDepositAmountWei: args.value
+      }
+    };
+    platform.sendMessage({
+      action: 'plugin_message_response',
+      data: depositStartedResponse,
+    }, { id: tab.id });
+  });
+  try {
+    const amount = ethers.utils.bigNumberify(data.valueInWei);
+    const NodeMethodNameDEPOSIT = 'deposit';
+    const depositResponse = await node.call(NodeMethodNameDEPOSIT, {
+      type: NodeMethodNameDEPOSIT,
+      requestId: uuid.v4(),
+      params: {
+        amount,
+        multisigAddress: data.multisigAddress,
+        notifyCounterparty: true
+      }
+    });
+    console.log('Deposit Response: ', depositResponse);
+  }
+  catch (e) {
+    console.error(e);
+  }
+}
+
+function metamaskListenCreateChannel(node, tab) {
+  console.log('Start observing createChannel');
+  const NodeEventNameCREATE_CHANNEL = 'createChannelEvent';
+  node.once(NodeEventNameCREATE_CHANNEL, (data) => {
+    const channelCreatedResponse = {
+      message: 'metamask:emit:createChannel',
+      data
+    };
+    platform.sendMessage({
+      action: 'plugin_message_response',
+      data: channelCreatedResponse,
+    }, { id: tab.id });
+  });
+}
+
+async function metamaskRequestBalances(data, node, tab) {
+  console.log('Request for balances', data);
+  const query = {
+    type: "getFreeBalanceState",
+    requestId: uuid.v4(),
+    params: { multisigAddress: data.multisigAddress }
+  };
+  let response = await node.call(query.type, query);
+  const balancesResponse = {
+    message: 'metamask:response:balances',
+    data: response.result.state
+  };
+  platform.sendMessage({
+    action: 'plugin_message_response',
+    data: balancesResponse,
+  }, { id: tab.id });
+}
+
+function metamaskGetNodeAddress(node, tab) {
+  console.log('Request for Node Public ID');
+  const nodeAddressResponse = {
+    message: 'metamask:set:nodeAddress',
+    data: node.publicIdentifier
+  };
+  platform.sendMessage({
+    action: 'plugin_message_response',
+    data: nodeAddressResponse,
+  }, { id: tab.id });
+}
+
+function metamaskSetupInit(provider, tab) {
+  provider.getSigner = () => {
+    const mockSigner = {};
+    mockSigner.getAddress = () => {
+      // Adding getSigner method to provider to "mock" web3 JSONRPC Provider
+      return new Promise((resolve, reject) => {
+        const getAddressCB = event => {
+          console.log("getAddress Event: ", event);
+          if (event.data && event.data.message === 'metamask:response:signer:address') {
+            platform.removeMessageListener(getAddressCB);
+            console.log('signer address response', event);
+            resolve(event.data.data);
+          }
+        };
+        platform.addMessageListener(getAddressCB);
+        console.log('Request Provider getSigner address');
+        const getSignerAddressMessage = {
+          message: 'metamask:request:signer:address'
+        };
+        platform.sendMessage({
+          action: 'plugin_message_response',
+          data: getSignerAddressMessage,
+        }, { id: tab.id });
+      });
+    };
+    mockSigner.sendTransaction = (signedTransaction) => {
+      // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
+      return new Promise((resolve, reject) => {
+        const sendTransactionCb = async (event) => {
+          if (event.data && event.data.message === "metamask:response:signer:sendTransaction") {
+            platform.removeMessageListener(sendTransactionCb);
+            const transaction = event.data.data;
+            transaction.gasLimit = ethers.utils.bigNumberify(transaction.gasLimit._hex);
+            transaction.gasPrice = ethers.utils.bigNumberify(transaction.gasPrice._hex);
+            transaction.value = ethers.utils.bigNumberify(transaction.value._hex);
+            console.log("sendTransaction response", transaction);
+            resolve(transaction);
+          }
+        };
+        platform.addMessageListener(sendTransactionCb);
+        console.log('Request Provider sendTransaction');
+        const getSendTransactionMessage = {
+          message: 'metamask:request:signer:sendTransaction',
+          data: {
+            signedTransaction
+          }
+        };
+        platform.sendMessage({
+          action: 'plugin_message_response',
+          data: getSendTransactionMessage,
+        }, { id: tab.id });
+      });
+    };
+    return mockSigner;
+  };
+  const setupResponse = {
+    message: 'metamask:setup:complete',
+    data: {}
+  };
+  platform.sendMessage({
+    action: 'plugin_message_response',
+    data: setupResponse,
+  }, { id: tab.id });
+}
 
 function configureMessagePorts (tabId) {
   nodeProviderConfig.eventHolder[tabId] = [];
