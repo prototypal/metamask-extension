@@ -115,7 +115,7 @@ function setupStreams () {
 }
 
 
-let didInitPort = false;
+let didInitPort = false // Used to signal if backgroundPort has been initialized
 
 /**
  * Establishes listeners for requests to fully-enable the provider from the dapp context
@@ -124,26 +124,24 @@ let didInitPort = false;
  * handles posting these messages internally.
  */
 function listenForProviderRequest () {
-  let dAppPort;
-  let backgroundPort;
-  let eventListenerHolder = []
+  let dAppPort
+  let backgroundPort
+  const eventListenerHolder = []
   function relayMessage (event) {
-    if(event.name == "cfNodeProvider") {
-      console.log("Relay this event to dApp", event)
-      dAppPort.postMessage(event.event);
+    if (event.name === 'cfNodeProvider') {
+      // Relay this event to dApp
+      dAppPort.postMessage(event.event)
     }
   }
 
   extension.runtime.onConnect.addListener(port => {
-    if(port.name == "cfNodeProvider") {
-      // if(nodeProviderConfig.ports[tabId]) {
-      //   return;
-      // }
-      if(eventListenerHolder.includes(port.sender.id)) {
-        return;
+    if (port.name === 'cfNodeProvider') {
+        // port already exists
+        if (eventListenerHolder.includes(port.sender.id)) {
+        return
       }
-      backgroundPort = port;
-      port.onMessage.addListener(relayMessage.bind(this));
+      backgroundPort = port
+      port.onMessage.addListener(relayMessage.bind(this))
       eventListenerHolder.push(port.sender.id)
     }
   })
@@ -172,7 +170,7 @@ function listenForProviderRequest () {
         })
         break
       case 'PLUGIN_MESSAGE':
-        if(data.data.message === "cf-node-provider:ready") {
+        if (data.data.message === 'cf-node-provider:ready') {
           // Ideally we need to use a messageQueue and flush it here?
         }
         extension.runtime.sendMessage({
@@ -206,11 +204,12 @@ function listenForProviderRequest () {
         window.postMessage({ type: 'metamasksetlocked' }, '*')
         break
       case 'plugin_message_response':
-        if(data.message === "cf-node-provider:port") {
-          if(!didInitPort) {
-            didInitPort = true;
-            const { port1, port2 } = configureMessagePorts(backgroundPort);
-            dAppPort = port1;
+        if (data.message === 'cf-node-provider:port') {
+          if (!didInitPort) {
+            // Configure Message Ports only once
+            didInitPort = true
+            const { port1, port2 } = configureMessagePorts(backgroundPort)
+            dAppPort = port1
             window.postMessage({ type: 'plugin_message_response', data }, '*', [port2])
           }
         } else {
@@ -226,16 +225,16 @@ function listenForProviderRequest () {
  * container, and attaches a listener to relay messages via the
  * EventEmitter.
  */
-function configureMessagePorts(backgroundPort) {
-  const channel = new MessageChannel();
+function configureMessagePorts (backgroundPort) {
+  const channel = new MessageChannel()
 
-  const port = channel.port1;
-  port.addEventListener("message", event => {
-    backgroundPort.postMessage({name: "cfNodeProvider", data: event.data})
-  });
-  port.start();
+  const port = channel.port1
+  port.addEventListener('message', event => {
+    backgroundPort.postMessage({name: 'cfNodeProvider', data: event.data})
+  })
+  port.start()
 
-  return channel;
+  return channel
 }
 
 /**
