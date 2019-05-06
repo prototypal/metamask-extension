@@ -114,6 +114,8 @@ function setupStreams () {
   mux.ignoreStream('publicConfig')
 }
 
+let didInitPort = false // Used to signal if backgroundPort has been initialized
+
 /**
  * Establishes listeners for requests to fully-enable the provider from the dapp context
  * and for full-provider approvals and rejections from the background script context. Dapps
@@ -121,6 +123,28 @@ function setupStreams () {
  * handles posting these messages internally.
  */
 function listenForProviderRequest () {
+  let dAppPort
+  let backgroundPort
+  const eventListenerHolder = []
+  function relayMessage (event) {
+    if (event.name === 'cfNodeProvider') {
+      // Relay this event to dApp
+      dAppPort.postMessage(event.event)
+    }
+  }
+
+   extension.runtime.onConnect.addListener(port => {
+    if (port.name === 'cfNodeProvider') {
+        // port already exists
+        if (eventListenerHolder.includes(port.sender.id)) {
+        return
+      }
+      backgroundPort = port
+      port.onMessage.addListener(relayMessage.bind(this))
+      eventListenerHolder.push(port.sender.id)
+    }
+  })
+
   window.addEventListener('message', ({ source, data }) => {
     if (source !== window || !data || !data.type) { return }
     switch (data.type) {
@@ -144,10 +168,18 @@ function listenForProviderRequest () {
           action: 'init-is-unlocked',
         })
         break
+      case 'PLUGIN_MESSAGE':
+        if (data.data.message === 'cf-node-provider:ready') {
+          // Ideally we need to use a messageQueue and flush it here?
+        }
+        extension.runtime.sendMessage({
+          action: 'plugin_message',
+          data: data.data,
+        })
     }
   })
 
-  extension.runtime.onMessage.addListener(({ action = '', isApproved, caching, isUnlocked, selectedAddress }) => {
+  extension.runtime.onMessage.addListener(({ action = '', isApproved, caching, isUnlocked, selectedAddress, data }) => {
     switch (action) {
       case 'approve-provider-request':
         isEnabled = true
@@ -175,8 +207,39 @@ function listenForProviderRequest () {
         break
       case 'ethereum-ping-error':
         window.postMessage({ type: 'ethereumpingerror' }, '*')
+        break
+      case 'plugin_message_response':
+        if (data.message === 'cf-node-provider:port') {
+          if (!didInitPort) {
+            // Configure Message Ports only once
+            didInitPort = true
+            const { port1, port2 } = configureMessagePorts(backgroundPort)
+            dAppPort = port1
+            window.postMessage({ type: 'plugin_message_response', data }, '*', [port2])
+          }
+        } else {
+          window.postMessage({ type: 'plugin_message_response', data }, '*')
+        }
+        break
     }
   })
+}
+
+/**
+ * Binds this end of the MessageChannel (aka `port1`) to the dApp
+ * container, and attaches a listener to relay messages via the
+ * EventEmitter.
+ */
+function configureMessagePorts (backgroundPort) {
+  const channel = new MessageChannel()
+
+   const port = channel.port1
+  port.addEventListener('message', event => {
+    backgroundPort.postMessage({name: 'cfNodeProvider', data: event.data})
+  })
+  port.start()
+
+   return channel
 }
 
 /**

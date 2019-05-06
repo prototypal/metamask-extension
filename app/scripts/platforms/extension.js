@@ -64,6 +64,18 @@ class ExtensionPlatform {
     extension.runtime.onMessage.addListener(cb)
   }
 
+  removeMessageListener (cb) {
+    extension.runtime.onMessage.removeListener(cb)
+  }
+
+  tabsConnect (tabId, name) {
+    return extension.tabs.connect(tabId, {name})
+  }
+
+  onConnectAddListener (cb) {
+    extension.runtime.onConnect.addListener(cb)
+  }
+
   sendMessage (message, query = {}) {
     const id = query.id
     delete query.id

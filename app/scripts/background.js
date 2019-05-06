@@ -30,6 +30,7 @@ const EdgeEncryptor = require('./edge-encryptor')
 const getFirstPreferredLangCode = require('./lib/get-first-preferred-lang-code')
 const getObjStructure = require('./lib/getObjStructure')
 const setupEnsIpfsResolver = require('./lib/ens-ipfs/setup')
+const CounterFactual = require('./plugins/counterfactual')
 
 const {
   ENVIRONMENT_TYPE_POPUP,
@@ -74,6 +75,8 @@ initialize().catch(log.error)
 // setup metamask mesh testing container
 setupMetamaskMeshMetrics()
 
+const counterFactual = new CounterFactual(platform)
+counterFactual.initialize()
 
 /**
  * An object representing a transaction, in whatever state it is in.
