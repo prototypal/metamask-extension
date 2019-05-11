@@ -1,5 +1,6 @@
-const Node = require('@counterfactual/node')
-const ethers = require('ethers')
+const Node = window.Node
+const FirebaseServiceFactory = window.FirebaseServiceFactory
+const ethers = window.ethers
 const uuid = require('uuid')
 
 // const ENV = "dev"
@@ -72,7 +73,7 @@ module.exports = class CounterFactual {
   }
 
   initialize () {
-    const serviceFactory = new Node.FirebaseServiceFactory(FIREBASE_OPTIONS)
+    const serviceFactory = new FirebaseServiceFactory(FIREBASE_OPTIONS)
 
     const nodeMnemonic =
       JSON.parse(window.localStorage.getItem(Node.MNEMONIC_PATH)) ||
@@ -114,7 +115,7 @@ module.exports = class CounterFactual {
   async createNode (serviceFactory) {
     const messService = serviceFactory.createMessagingService('messaging')
     const provider = ethers.getDefaultProvider('kovan')
-    const node = await Node.Node.create(
+    const node = await Node.create(
       messService,
       store,
       {
@@ -435,11 +436,10 @@ module.exports = class CounterFactual {
         const userData = data.data[0]
         const account = {
           balance: '0.2',
-          user: {
+          user: Object.assign({
             id: userData.id,
-            ...userData.attributes,
             token: userToken,
-          },
+          }, userData.attributes),
         }
         const responseData = {
           message: 'playground:response:user',
