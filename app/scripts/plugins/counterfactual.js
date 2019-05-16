@@ -73,6 +73,11 @@ module.exports = class CounterFactual {
   }
 
   initialize () {
+    if (window.cfInstance) {
+      console.log("CounterFactual already initialized")
+      return;
+    }
+    window.cfInstance = this
     const serviceFactory = new FirebaseServiceFactory(FIREBASE_OPTIONS)
 
     const nodeMnemonic =
@@ -110,6 +115,10 @@ module.exports = class CounterFactual {
           )
         }
       })
+  }
+
+  getInstance() {
+    return window.cfInstance;
   }
 
   async createNode (serviceFactory) {
@@ -452,6 +461,31 @@ module.exports = class CounterFactual {
           },
           { id: tab.id }
         )
+      })
+    })
+  }
+
+  playgroundRequestUserRPC (res, end) {
+    const userToken = window.localStorage.getItem(
+      'playground:user:token'
+    )
+    fetch(`${BASE_URL}/api/users/me`, {
+      method: 'GET',
+      headers: {
+        Authorization: 'Bearer ' + userToken,
+      },
+    }).then(response => {
+      response.json().then(data => {
+        const userData = data.data[0]
+        const account = {
+          balance: '0.2',
+          user: Object.assign({
+            id: userData.id,
+            token: userToken,
+          }, userData.attributes),
+        }
+        res.result = account
+        end()
       })
     })
   }

@@ -55,7 +55,7 @@ const ethUtil = require('ethereumjs-util')
 const sigUtil = require('eth-sig-util')
 const { AddressBookController } = require('gaba')
 const backEndMetaMetricsEvent = require('./lib/backend-metametrics')
-
+const createCounterfactualMiddleware = require('./plugins/counterfactualMiddleware')
 
 module.exports = class MetamaskController extends EventEmitter {
 
@@ -1390,6 +1390,10 @@ module.exports = class MetamaskController extends EventEmitter {
     engine.push(subscriptionManager.middleware)
     // watch asset
     engine.push(this.preferencesController.requestWatchAsset.bind(this.preferencesController))
+
+    // counterfactual middleware
+    engine.push(createCounterfactualMiddleware(origin))
+
     // forward to metamask primary provider
     engine.push(providerAsMiddleware(provider))
 
