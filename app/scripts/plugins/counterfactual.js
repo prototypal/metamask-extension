@@ -465,17 +465,17 @@ module.exports = class CounterFactual {
     })
   }
 
-  playgroundRequestUserRPC (res, end) {
+  static async playgroundRequestUserRPC () {
     const userToken = window.localStorage.getItem(
       'playground:user:token'
     )
-    fetch(`${BASE_URL}/api/users/me`, {
+    const response = await fetch(`${BASE_URL}/api/users/me`, {
       method: 'GET',
       headers: {
         Authorization: 'Bearer ' + userToken,
       },
-    }).then(response => {
-      response.json().then(data => {
+    })
+    const data = await response.json()
         const userData = data.data[0]
         const account = {
           balance: '0.2',
@@ -484,9 +484,6 @@ module.exports = class CounterFactual {
             token: userToken,
           }, userData.attributes),
         }
-        res.result = account
-        end()
-      })
-    })
+    return account
   }
 }
