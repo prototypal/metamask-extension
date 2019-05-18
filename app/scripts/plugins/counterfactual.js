@@ -81,11 +81,11 @@ module.exports = class CounterFactual {
     const serviceFactory = new FirebaseServiceFactory(FIREBASE_OPTIONS)
 
     const nodeMnemonic =
-      JSON.parse(window.localStorage.getItem(Node.MNEMONIC_PATH)) ||
+      JSON.parse(window.localStorage.getItem(window.MNEMONIC_PATH)) ||
       ethers.Wallet.createRandom().mnemonic
 
     store
-      .set([{ key: Node.MNEMONIC_PATH, value: nodeMnemonic }])
+      .set([{ key: window.MNEMONIC_PATH, value: nodeMnemonic }])
       .then(async () => {
         const { node, provider } = await this.createNode(serviceFactory)
         this.nodeProviderConfig.node = node
