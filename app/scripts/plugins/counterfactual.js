@@ -9,21 +9,21 @@ const ENV = 'staging'
 const FIREBASE_OPTIONS =
   ENV === 'dev'
     ? {
-        apiKey: '',
-        authDomain: '',
-        databaseURL: `ws://localhost:5555`,
-        projectId: '',
-        storageBucket: '',
-        messagingSenderId: '',
-      }
+      apiKey: '',
+      authDomain: '',
+      databaseURL: `ws://localhost:5555`,
+      projectId: '',
+      storageBucket: '',
+      messagingSenderId: '',
+    }
     : {
-        apiKey: 'AIzaSyA5fy_WIAw9mqm59mdN61CiaCSKg8yd4uw',
-        authDomain: 'foobar-91a31.firebaseapp.com',
-        databaseURL: 'https://foobar-91a31.firebaseio.com',
-        projectId: 'foobar-91a31',
-        storageBucket: 'foobar-91a31.appspot.com',
-        messagingSenderId: '432199632441',
-      }
+      apiKey: 'AIzaSyA5fy_WIAw9mqm59mdN61CiaCSKg8yd4uw',
+      authDomain: 'foobar-91a31.firebaseapp.com',
+      databaseURL: 'https://foobar-91a31.firebaseio.com',
+      projectId: 'foobar-91a31',
+      storageBucket: 'foobar-91a31.appspot.com',
+      messagingSenderId: '432199632441',
+    }
 
 const BASE_URL =
   ENV === 'dev'
@@ -74,8 +74,8 @@ module.exports = class CounterFactual {
 
   initialize () {
     if (window.cfInstance) {
-      console.log("CounterFactual already initialized")
-      return;
+      console.log('CounterFactual already initialized')
+      return
     }
     window.cfInstance = this
     const serviceFactory = new FirebaseServiceFactory(FIREBASE_OPTIONS)
@@ -115,10 +115,6 @@ module.exports = class CounterFactual {
           )
         }
       })
-  }
-
-  getInstance() {
-    return window.cfInstance;
   }
 
   async createNode (serviceFactory) {
@@ -476,14 +472,14 @@ module.exports = class CounterFactual {
       },
     })
     const data = await response.json()
-        const userData = data.data[0]
-        const account = {
-          balance: '0.2',
-          user: Object.assign({
-            id: userData.id,
-            token: userToken,
-          }, userData.attributes),
-        }
+    const userData = data.data[0]
+    const account = {
+      balance: '0.2',
+      user: Object.assign({
+        id: userData.id,
+        token: userToken,
+      }, userData.attributes),
+    }
     return account
   }
 }
