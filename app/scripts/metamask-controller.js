@@ -1392,7 +1392,7 @@ module.exports = class MetamaskController extends EventEmitter {
     engine.push(this.preferencesController.requestWatchAsset.bind(this.preferencesController))
 
     // counterfactual middleware
-    engine.push(createCounterfactualMiddleware(origin))
+    engine.push(createCounterfactualMiddleware())
 
     // forward to metamask primary provider
     engine.push(providerAsMiddleware(provider))

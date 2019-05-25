@@ -98,17 +98,11 @@ module.exports = class CounterFactual {
                   this.configureMessagePorts(tab.id)
                 }
                 if (action === 'plugin_message') {
-                  const userToken = window.localStorage.getItem(
-                    'playground:user:token'
-                  )
-
                   await this.handlePluginMessage(
                     data,
                     provider,
                     tab,
-                    this.nodeProviderConfig.node,
-                    userToken
-                  )
+                    this.nodeProviderConfig.node)
                 }
               }
             }
@@ -132,11 +126,8 @@ module.exports = class CounterFactual {
     return { node, provider }
   }
 
-  async handlePluginMessage (data, provider, tab, node, userToken) {
+  async handlePluginMessage (data, provider, tab, node) {
     switch (data.message) {
-      case 'playground:set:user':
-        window.localStorage.setItem('playground:user:token', data.data)
-        break
       case 'metamask:setup:initiate':
         this.metamaskSetupInit(provider, tab)
         break
@@ -151,12 +142,6 @@ module.exports = class CounterFactual {
         break
       case 'metamask:request:deposit':
         await this.metamaskRequestDeposit(node, tab, data)
-        break
-      case 'playground:request:user':
-        this.playgroundRequestUser(userToken, tab)
-        break
-      case 'playground:request:matchmake':
-        this.playgroundRequestMatchmake(userToken, tab)
         break
       case 'cf-node-provider:init':
         this.cfNodeProviderInit(tab)
@@ -397,13 +382,13 @@ module.exports = class CounterFactual {
     })
   }
 
-  playgroundRequestMatchmake (userToken, tab) {
+  static async playgroundRequestMatchmakeRPC () {
+    const userToken = this.getUserToken()
     const matchmakeData = {
       type: 'matchmakingRequest',
       attributes: { matchmakeWith: 'HighRollerBot' },
     }
-    // TODO Need to use ENV here to know where to send to
-    fetch(`${BASE_URL}/api/matchmaking-requests`, {
+    const response = await fetch(`${BASE_URL}/api/matchmaking-requests`, {
       method: 'POST',
       body: JSON.stringify({
         data: matchmakeData,
@@ -412,59 +397,13 @@ module.exports = class CounterFactual {
         'Content-Type': 'application/json; charset=utf-8',
         Authorization: 'Bearer ' + userToken,
       },
-    }).then(response => {
-      response.json().then(data => {
-        const oppData = data.data
-        const responseData = {
-          message: 'playground:response:matchmake',
-          data: oppData,
-        }
-        this.platform.sendMessage(
-          {
-            action: 'plugin_message_response',
-            data: responseData,
-          },
-          { id: tab.id }
-        )
-      })
     })
-  }
-
-  playgroundRequestUser (userToken, tab) {
-    fetch(`${BASE_URL}/api/users/me`, {
-      method: 'GET',
-      headers: {
-        Authorization: 'Bearer ' + userToken,
-      },
-    }).then(response => {
-      response.json().then(data => {
-        const userData = data.data[0]
-        const account = {
-          balance: '0.2',
-          user: Object.assign({
-            id: userData.id,
-            token: userToken,
-          }, userData.attributes),
-        }
-        const responseData = {
-          message: 'playground:response:user',
-          data: account,
-        }
-        this.platform.sendMessage(
-          {
-            action: 'plugin_message_response',
-            data: responseData,
-          },
-          { id: tab.id }
-        )
-      })
-    })
+    const data = await response.json()
+    return data.data
   }
 
   static async playgroundRequestUserRPC () {
-    const userToken = window.localStorage.getItem(
-      'playground:user:token'
-    )
+    const userToken = this.getUserToken()
     const response = await fetch(`${BASE_URL}/api/users/me`, {
       method: 'GET',
       headers: {
@@ -481,5 +420,11 @@ module.exports = class CounterFactual {
       }, userData.attributes),
     }
     return account
+  }
+
+  static getUserToken () {
+    return window.localStorage.getItem(
+      'playground:user:token'
+    )
   }
 }
