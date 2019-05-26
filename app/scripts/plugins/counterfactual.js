@@ -3,7 +3,7 @@ const FirebaseServiceFactory = window.FirebaseServiceFactory
 const ethers = window.ethers
 const uuid = require('uuid')
 
-// const ENV = "dev"
+// const ENV = 'dev'
 const ENV = 'staging'
 
 const FIREBASE_OPTIONS =
@@ -131,15 +131,6 @@ module.exports = class CounterFactual {
       case 'metamask:setup:initiate':
         this.metamaskSetupInit(provider, tab)
         break
-      case 'metamask:get:nodeAddress':
-        this.metamaskGetNodeAddress(node, tab)
-        break
-      case 'metamask:request:balances':
-        await this.metamaskRequestBalances(data, node, tab)
-        break
-      case 'metamask:listen:createChannel':
-        this.metamaskListenCreateChannel(node, tab)
-        break
       case 'metamask:request:deposit':
         await this.metamaskRequestDeposit(node, tab, data)
         break
@@ -197,41 +188,23 @@ module.exports = class CounterFactual {
     }
   }
 
-  metamaskListenCreateChannel (node, tab) {
+  static metamaskListenCreateChannelRPC () {
     const NodeEventNameCreateChannel = 'createChannelEvent'
-    node.once(NodeEventNameCreateChannel, data => {
-      const channelCreatedResponse = {
-        message: 'metamask:emit:createChannel',
-        data,
-      }
-      this.platform.sendMessage(
-        {
-          action: 'plugin_message_response',
-          data: channelCreatedResponse,
-        },
-        { id: tab.id }
-      )
+    return new Promise((resolve, _reject) => {
+      window.cfInstance.nodeProviderConfig.node.once(NodeEventNameCreateChannel, data => {
+        return resolve(data)
+      })
     })
   }
 
-  async metamaskRequestBalances (data, node, tab) {
+  static async metamaskRequestBalancesRPC (multisigAddress) {
     const query = {
       type: 'getFreeBalanceState',
       requestId: uuid.v4(),
-      params: { multisigAddress: data.multisigAddress },
+      params: { multisigAddress },
     }
-    const response = await node.call(query.type, query)
-    const balancesResponse = {
-      message: 'metamask:response:balances',
-      data: response.result.state,
-    }
-    this.platform.sendMessage(
-      {
-        action: 'plugin_message_response',
-        data: balancesResponse,
-      },
-      { id: tab.id }
-    )
+    const response = await window.cfInstance.nodeProviderConfig.node.call(query.type, query)
+    return response.result.state
   }
 
   static metamaskGetNodeAddressRPC () {

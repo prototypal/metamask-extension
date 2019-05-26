@@ -18,13 +18,14 @@ function createCounterfactualMiddleware () {
             case 'counterfactual:get:nodeAddress':
               res.result = await CounterFactual.metamaskGetNodeAddressRPC()
               break
-            case 'metamask:request:balances':
-              res.result = await CounterFactual.metamaskRequestBalances()
+            case 'counterfactual:request:balances':
+              res.result = await CounterFactual.metamaskRequestBalancesRPC(req.params[0])
               break
-            case 'metamask:listen:createChannel':
-              res.result = await CounterFactual.metamaskListenCreateChannel()
+            case 'counterfactual:listen:createChannel':
+              res.result = await CounterFactual.metamaskListenCreateChannelRPC()
               break
             case 'metamask:request:deposit':
+              // Not implemented
               res.result = await CounterFactual.metamaskRequestDeposit()
               break
             case 'counterfactual:request:user':
@@ -34,6 +35,7 @@ function createCounterfactualMiddleware () {
               res.result = await CounterFactual.playgroundRequestMatchmakeRPC()
               break
             case 'cf-node-provider:init':
+              // Not implemented
               res.result = await CounterFactual.cfNodeProviderInit()
               break
             default:
