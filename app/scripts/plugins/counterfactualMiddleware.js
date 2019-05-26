@@ -9,12 +9,14 @@ function createCounterfactualMiddleware () {
         switch (req.method) {
             case 'counterfactual:set:user':
               window.localStorage.setItem('playground:user:token', req.params[0])
+              res.result = req.params[0]
               break
             case 'metamask:setup:initiate':
+              // Not implemented
               res.result = await CounterFactual.metamaskSetupInit()
               break
-            case 'metamask:get:nodeAddress':
-              res.result = await CounterFactual.metamaskGetNodeAddress()
+            case 'counterfactual:get:nodeAddress':
+              res.result = await CounterFactual.metamaskGetNodeAddressRPC()
               break
             case 'metamask:request:balances':
               res.result = await CounterFactual.metamaskRequestBalances()

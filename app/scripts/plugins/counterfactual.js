@@ -234,18 +234,8 @@ module.exports = class CounterFactual {
     )
   }
 
-  metamaskGetNodeAddress (node, tab) {
-    const nodeAddressResponse = {
-      message: 'metamask:set:nodeAddress',
-      data: node.publicIdentifier,
-    }
-    this.platform.sendMessage(
-      {
-        action: 'plugin_message_response',
-        data: nodeAddressResponse,
-      },
-      { id: tab.id }
-    )
+  static metamaskGetNodeAddressRPC () {
+    return window.cfInstance.nodeProviderConfig.node.publicIdentifier
   }
 
   metamaskSetupInit (provider, tab) {
