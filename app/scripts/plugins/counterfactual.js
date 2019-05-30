@@ -62,22 +62,14 @@ const store = {
   },
 }
 
-module.exports = class CounterFactual {
-  constructor (platform) {
+module.exports = class CounterfactualController {
+  constructor ({ platform, provider } = {}) {
     this.nodeProviderConfig = {
       ports: {},
-      node: null,
       eventHolder: {},
     }
     this.platform = platform
-  }
 
-  initialize () {
-    if (window.cfInstance) {
-      console.log('CounterFactual already initialized')
-      return
-    }
-    window.cfInstance = this
     const serviceFactory = new FirebaseServiceFactory(FIREBASE_OPTIONS)
 
     const nodeMnemonic =
@@ -87,8 +79,8 @@ module.exports = class CounterFactual {
     store
       .set([{ key: window.MNEMONIC_PATH, value: nodeMnemonic }])
       .then(async () => {
-        const { node, provider } = await this.createNode(serviceFactory)
-        this.nodeProviderConfig.node = node
+        const node = await this.createNode(serviceFactory)
+        this.node = node
 
         if (this.platform && this.platform.addMessageListener) {
           this.platform.addMessageListener(
@@ -100,9 +92,8 @@ module.exports = class CounterFactual {
                 if (action === 'plugin_message') {
                   await this.handlePluginMessage(
                     data,
-                    provider,
                     tab,
-                    this.nodeProviderConfig.node)
+                    this.node)
                 }
               }
             }
@@ -230,72 +221,11 @@ module.exports = class CounterFactual {
           const getSignerAddressMessage = {
             message: 'metamask:request:signer:address',
           }
-          this.platform.sendMessage(
-            {
-              action: 'plugin_message_response',
-              data: getSignerAddressMessage,
-            },
-            { id: tab.id }
-          )
-        })
-      }
-      mockSigner.sendTransaction = signedTransaction => {
-        // Adding sendTransaction method to provider to "mock" web3 JSONRPC Provider
-        return new Promise((resolve, reject) => {
-          const sendTransactionCb = async event => {
-            if (
-              event.data &&
-              event.data.message === 'metamask:response:signer:sendTransaction'
-            ) {
-              this.platform.removeMessageListener(sendTransactionCb)
-              const transaction = event.data.data
-              transaction.gasLimit = ethers.utils.bigNumberify(
-                transaction.gasLimit._hex
-              )
-              transaction.gasPrice = ethers.utils.bigNumberify(
-                transaction.gasPrice._hex
-              )
-              transaction.value = ethers.utils.bigNumberify(
-                transaction.value._hex
-              )
-              resolve(transaction)
-            }
-          }
-          this.platform.addMessageListener(sendTransactionCb)
-          const getSendTransactionMessage = {
-            message: 'metamask:request:signer:sendTransaction',
-            data: {
-              signedTransaction,
-            },
-          }
-          this.platform.sendMessage(
-            {
-              action: 'plugin_message_response',
-              data: getSendTransactionMessage,
-            },
-            { id: tab.id }
-          )
-        })
-      }
-      return mockSigner
-    }
-    const setupResponse = {
-      message: 'metamask:setup:complete',
-      data: {},
-    }
-    this.platform.sendMessage(
-      {
-        action: 'plugin_message_response',
-        data: setupResponse,
-      },
-      { id: tab.id }
-    )
-  }
 
   configureMessagePorts (tabId) {
     this.nodeProviderConfig.eventHolder[tabId] = []
     function relayMessageToNode (event) {
-      this.nodeProviderConfig.node.emit(event.data.type, event.data)
+      this.node.emit(event.data.type, event.data)
     }
 
     function relayMessageToDapp (event) {
@@ -317,25 +247,25 @@ module.exports = class CounterFactual {
       }
     }
 
-    this.nodeProviderConfig.node.on(
+    this.node.on(
       'proposeInstallVirtual',
       relayMessageToDapp.bind(this)
     )
-    this.nodeProviderConfig.node.on(
+    this.node.on(
       'installVirtualEvent',
       relayMessageToDapp.bind(this)
     )
-    this.nodeProviderConfig.node.on(
+    this.node.on(
       'getAppInstanceDetails',
       relayMessageToDapp.bind(this)
     )
-    this.nodeProviderConfig.node.on('getState', relayMessageToDapp.bind(this))
-    this.nodeProviderConfig.node.on('takeAction', relayMessageToDapp.bind(this))
-    this.nodeProviderConfig.node.on(
+    this.node.on('getState', relayMessageToDapp.bind(this))
+    this.node.on('takeAction', relayMessageToDapp.bind(this))
+    this.node.on(
       'updateStateEvent',
       relayMessageToDapp.bind(this)
     )
-    this.nodeProviderConfig.node.on('uninstallEvent', relayMessageToDapp.bind(this))
+    this.node.on('uninstallEvent', relayMessageToDapp.bind(this))
 
     const backgroundPort = this.platform.tabsConnect(tabId, 'cfNodeProvider')
     this.nodeProviderConfig.ports[tabId] = backgroundPort
@@ -345,7 +275,7 @@ module.exports = class CounterFactual {
     })
   }
 
-  static async playgroundRequestMatchmakeRPC () {
+  async playgroundRequestMatchmakeRPC () {
     const userToken = this.getUserToken()
     const matchmakeData = {
       type: 'matchmakingRequest',
@@ -365,7 +295,7 @@ module.exports = class CounterFactual {
     return data.data
   }
 
-  static async playgroundRequestUserRPC () {
+  async playgroundRequestUserRPC () {
     const userToken = this.getUserToken()
     const response = await fetch(`${BASE_URL}/api/users/me`, {
       method: 'GET',
@@ -385,7 +315,7 @@ module.exports = class CounterFactual {
     return account
   }
 
-  static getUserToken () {
+  getUserToken () {
     return window.localStorage.getItem(
       'playground:user:token'
     )

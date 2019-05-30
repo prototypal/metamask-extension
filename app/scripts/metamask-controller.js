@@ -56,6 +56,7 @@ const sigUtil = require('eth-sig-util')
 const { AddressBookController } = require('gaba')
 const backEndMetaMetricsEvent = require('./lib/backend-metametrics')
 const createCounterfactualMiddleware = require('./plugins/counterfactualMiddleware')
+const CounterfactualController = require('./plugins/counterfactual')
 
 module.exports = class MetamaskController extends EventEmitter {
 
@@ -117,6 +118,11 @@ module.exports = class MetamaskController extends EventEmitter {
     this.initializeProvider()
     this.provider = this.networkController.getProviderAndBlockTracker().provider
     this.blockTracker = this.networkController.getProviderAndBlockTracker().blockTracker
+
+    this.counterfactualController = new CounterfactualController({
+      platform: this.platform,
+      provider: this.provider
+    })
 
     // token exchange rate tracker
     this.tokenRatesController = new TokenRatesController({
@@ -1392,7 +1398,7 @@ module.exports = class MetamaskController extends EventEmitter {
     engine.push(this.preferencesController.requestWatchAsset.bind(this.preferencesController))
 
     // counterfactual middleware
-    engine.push(createCounterfactualMiddleware())
+    engine.push(createCounterfactualMiddleware(this.counterfactualController))
 
     // forward to metamask primary provider
     engine.push(providerAsMiddleware(provider))

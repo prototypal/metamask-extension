@@ -67,7 +67,7 @@ PluginCell.prototype.render = function () {
     dollarBalance = `$${this.props.pluginsScripts[uid].mainBalance *
       conversionRate} USD`
   } else {
-    balance = 'CounterFactual'
+    balance = 'Counterfactual'
     dollarBalance = ''
   }
 
