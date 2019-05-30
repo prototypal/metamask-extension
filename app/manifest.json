@@ -28,6 +28,7 @@
   "background": {
     "scripts": [
       "chromereload.js",
+      "vendor/counterfactual/node/uuid.js",
       "vendor/counterfactual/node/firebase.js",
       "vendor/counterfactual/node/ethers.js",
       "vendor/counterfactual/node/loglevel.min.js",

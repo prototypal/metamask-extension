@@ -414,6 +414,7 @@ this.window.cf = (function (exports, utils$1) {
 	        const context = window.parent || window;
 	        this.log("connect", "Attempting to connect");
 	        return new Promise((resolve, reject) => {
+	            let receivedPort = false;
 	            window.addEventListener("message", event => {
 	                if (event.data === "cf-node-provider:port") {
 	                    this.log("connect", "Received message via window.onMessage event", "cf-node-provider-port");
@@ -421,8 +422,28 @@ this.window.cf = (function (exports, utils$1) {
 	                    this.notifyNodeProviderIsConnected();
 	                    resolve(this);
 	                }
+	                else if (event.data.type === "plugin_message_response") {
+	                    if (event.data.data.message === "cf-node-provider:port") {
+	                        if (receivedPort) {
+	                            return;
+	                        }
+	                        receivedPort = true;
+	                        this.log("connect", "Received message via window.onMessage event", "cf-node-provider-port");
+	                        this.startMessagePort(event);
+	                        this.notifyNodeProviderIsConnected();
+	                        resolve(this);
+	                    }
+	                }
 	            });
-	            context.postMessage("cf-node-provider:init", "*");
+	            if (window === window.parent) {
+	                window.postMessage({
+	                    type: "PLUGIN_MESSAGE",
+	                    data: { message: "cf-node-provider:init" }
+	                }, "*");
+	            }
+	            else {
+	                context.postMessage("cf-node-provider:init", "*");
+	            }
 	            this.log("connect", "used window.postMessage() to send", "cf-node-provider:init");
 	        });
 	    }
@@ -436,7 +457,15 @@ this.window.cf = (function (exports, utils$1) {
 	        this.log("startMessagePort", "messagePort has started");
 	    }
 	    notifyNodeProviderIsConnected() {
-	        window.postMessage("cf-node-provider:ready", "*");
+	        if (window === window.parent) {
+	            window.postMessage({
+	                type: "PLUGIN_MESSAGE",
+	                data: { message: "cf-node-provider:ready" }
+	            }, "*");
+	        }
+	        else {
+	            window.postMessage("cf-node-provider:ready", "*");
+	        }
 	        this.log("notifyNodeProviderIsConnected", "used window.postMessage() to send:", "cf-node-provider:ready");
 	        this.isConnected = true;
 	        this.log("notifyNodeProviderIsConnected", "Connection successful");
@@ -448,6 +477,18 @@ this.window.cf = (function (exports, utils$1) {
 	    AssetType[AssetType["ETH"] = 0] = "ETH";
 	    AssetType[AssetType["ERC20"] = 1] = "ERC20";
 	})(AssetType || (AssetType = {}));
+
+	var OutcomeType;
+	(function (OutcomeType) {
+	    OutcomeType[OutcomeType["TWO_PARTY_OUTCOME"] = 0] = "TWO_PARTY_OUTCOME";
+	    OutcomeType[OutcomeType["ETH_TRANSFER"] = 1] = "ETH_TRANSFER";
+	})(OutcomeType || (OutcomeType = {}));
+	var TwoPartyOutcome;
+	(function (TwoPartyOutcome) {
+	    TwoPartyOutcome[TwoPartyOutcome["SEND_TO_ADDR_ONE"] = 0] = "SEND_TO_ADDR_ONE";
+	    TwoPartyOutcome[TwoPartyOutcome["SEND_TO_ADDR_TWO"] = 1] = "SEND_TO_ADDR_TWO";
+	    TwoPartyOutcome[TwoPartyOutcome["SPLIT_AND_SEND_TO_BOTH_ADDRS"] = 2] = "SPLIT_AND_SEND_TO_BOTH_ADDRS";
+	})(TwoPartyOutcome || (TwoPartyOutcome = {}));
 
 	var Node;
 	(function (Node) {
