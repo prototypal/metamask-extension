@@ -50,6 +50,7 @@ const selectors = {
   getNumberOfTokens,
   isEthereumNetwork,
   getMetaMetricState,
+  getRpcPrefsForCurrentProvider,
 }
 
 module.exports = selectors
@@ -331,4 +332,11 @@ function getMetaMetricState (state) {
     numberOfAccounts: getNumberOfAccounts(state),
     participateInMetaMetrics: state.metamask.participateInMetaMetrics,
   }
+}
+
+function getRpcPrefsForCurrentProvider (state) {
+  const { frequentRpcListDetail, provider } = state.metamask
+  const selectRpcInfo = frequentRpcListDetail.find(rpcInfo => rpcInfo.rpcUrl === provider.rpcTarget)
+  const { rpcPrefs = {} } = selectRpcInfo || {}
+  return rpcPrefs
 }

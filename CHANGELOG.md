@@ -2,6 +2,32 @@
 
 ## Current Develop Branch
 
+## 6.5.3 Thu May 16 2019
+
+- [#6619](https://github.com/MetaMask/metamask-extension/pull/6619): bugfix: show extension window if locked regardless of approval
+- [#6388](https://github.com/MetaMask/metamask-extension/pull/6388): Transactions/pending - check nonce against the network and mark as dropped if not included in a block
+- [#6606](https://github.com/MetaMask/metamask-extension/pull/6606): Improve ENS Address Input
+- [#6615](https://github.com/MetaMask/metamask-extension/pull/6615): Adds e2e test for removing imported accounts.
+
+## 6.5.2 Wed May 15 2019
+
+- [#6613](https://github.com/MetaMask/metamask-extension/pull/6613): Hardware Wallet Fix
+## 6.5.1 Tue May 14 2019
+
+- Fix bug where approve method would show a warning. #6602
+- [#6593](https://github.com/MetaMask/metamask-extension/pull/6593): Fix wording of autoLogoutTimeLimitDescription
+
+## 6.5.0 Fri May 10 2019
+
+- [#6568](https://github.com/MetaMask/metamask-extension/pull/6568): feature: integrate gaba/PhishingController
+- [#6490](https://github.com/MetaMask/metamask-extension/pull/6490): Redesign custom RPC form
+- [#6558](https://github.com/MetaMask/metamask-extension/pull/6558): Adds auto logout with customizable time frame
+- [#6578](https://github.com/MetaMask/metamask-extension/pull/6578): Fixes ability to send to token contract addresses
+- [#6557](https://github.com/MetaMask/metamask-extension/pull/6557): Adds drag and drop functionality to seed phrase entry.
+- [#6526](https://github.com/MetaMask/metamask-extension/pull/6526): Include token checksum address in prices lookup for token rates
+- [#6502](https://github.com/MetaMask/metamask-extension/pull/6502): Add subheader to all settings subviews
+- [#6501](https://github.com/MetaMask/metamask-extension/pull/6501): Improve confirm screen loading performance by fixing home screen rendering bug
+
 ## 6.4.1 Fri Apr 26 2019
 
 - [#6521](https://github.com/MetaMask/metamask-extension/pull/6521): Revert "Adds 4byte registry fallback to getMethodData()" to fix stalling bug.
