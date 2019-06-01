@@ -79,6 +79,7 @@ module.exports = class CounterfactualController {
     store
       .set([{ key: window.MNEMONIC_PATH, value: nodeMnemonic }])
       .then(async () => {
+        this.provider = new ethers.providers.Web3Provider(provider)
         const node = await this.createNode(serviceFactory)
         this.node = node
 
@@ -104,27 +105,20 @@ module.exports = class CounterfactualController {
 
   async createNode (serviceFactory) {
     const messService = serviceFactory.createMessagingService('messaging')
-    const provider = ethers.getDefaultProvider('kovan')
     const node = await Node.create(
       messService,
       store,
       {
         STORE_KEY_PREFIX: 'store',
       },
-      provider,
+      this.provider,
       'kovan'
     )
-    return { node, provider }
+    return node
   }
 
-  async handlePluginMessage (data, provider, tab, node) {
+  async handlePluginMessage (data, tab, node) {
     switch (data.message) {
-      case 'metamask:setup:initiate':
-        this.metamaskSetupInit(provider, tab)
-        break
-      case 'metamask:request:deposit':
-        await this.metamaskRequestDeposit(node, tab, data)
-        break
       case 'cf-node-provider:init':
         this.cfNodeProviderInit(tab)
         break
@@ -144,82 +138,55 @@ module.exports = class CounterfactualController {
     )
   }
 
-  async metamaskRequestDeposit (node, tab, data) {
+  async metamaskRequestDepositStartRPC () {
     const NodeEventNameDepositStarted = 'depositStartedEvent'
-    node.once(NodeEventNameDepositStarted, args => {
-      const depositStartedResponse = {
-        message: 'metamask:response:deposit',
-        data: {
-          ethPendingDepositTxHash: args.txHash,
-          ethPendingDepositAmountWei: args.value,
-        },
-      }
-      this.platform.sendMessage(
-        {
-          action: 'plugin_message_response',
-          data: depositStartedResponse,
-        },
-        { id: tab.id }
-      )
+    
+    return new Promise((resolve, _reject) => {
+      this.node.once(NodeEventNameDepositStarted, data => {
+        return resolve(data)
+      })
     })
+      }
+
+  async metamaskRequestDepositRPC (amount, multisigAddress) {
     try {
-      const amount = ethers.utils.bigNumberify(data.valueInWei)
       const NodeMethodNameDEPOSIT = 'deposit'
-      await node.call(NodeMethodNameDEPOSIT, {
+      const result = await this.node.call(NodeMethodNameDEPOSIT, {
         type: NodeMethodNameDEPOSIT,
         requestId: uuid.v4(),
         params: {
           amount,
-          multisigAddress: data.multisigAddress,
+          multisigAddress: multisigAddress,
           notifyCounterparty: true,
         },
       })
+      return result
     } catch (e) {
       console.error(e)
     }
   }
 
-  static metamaskListenCreateChannelRPC () {
+  metamaskListenCreateChannelRPC () {
     const NodeEventNameCreateChannel = 'createChannelEvent'
     return new Promise((resolve, _reject) => {
-      window.cfInstance.nodeProviderConfig.node.once(NodeEventNameCreateChannel, data => {
+      this.node.once(NodeEventNameCreateChannel, data => {
         return resolve(data)
       })
     })
   }
 
-  static async metamaskRequestBalancesRPC (multisigAddress) {
+  async metamaskRequestBalancesRPC (multisigAddress) {
     const query = {
       type: 'getFreeBalanceState',
       requestId: uuid.v4(),
       params: { multisigAddress },
     }
-    const response = await window.cfInstance.nodeProviderConfig.node.call(query.type, query)
-    return response.result.state
+    const response = await this.node.call(query.type, query)
+    return response.result
   }
 
-  static metamaskGetNodeAddressRPC () {
-    return window.cfInstance.nodeProviderConfig.node.publicIdentifier
-  }
-
-  metamaskSetupInit (provider, tab) {
-    provider.getSigner = () => {
-      const mockSigner = {}
-      mockSigner.getAddress = () => {
-        // Adding getSigner method to provider to "mock" web3 JSONRPC Provider
-        return new Promise((resolve, reject) => {
-          const getAddressCB = event => {
-            if (
-              event.data &&
-              event.data.message === 'metamask:response:signer:address'
-            ) {
-              this.platform.removeMessageListener(getAddressCB)
-              resolve(event.data.data)
-            }
-          }
-          this.platform.addMessageListener(getAddressCB)
-          const getSignerAddressMessage = {
-            message: 'metamask:request:signer:address',
+  metamaskGetNodeAddressRPC () {
+    return this.node.publicIdentifier
           }
 
   configureMessagePorts (tabId) {
