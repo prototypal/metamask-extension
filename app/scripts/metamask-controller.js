@@ -62,6 +62,7 @@ const {
 const backEndMetaMetricsEvent = require('./lib/backend-metametrics')
 const createCounterfactualMiddleware = require('./plugins/counterfactualMiddleware')
 const CounterfactualController = require('./plugins/counterfactual')
+const providerFromEngine = require('eth-json-rpc-middleware/providerFromEngine')
 
 module.exports = class MetamaskController extends EventEmitter {
 
@@ -124,11 +125,6 @@ module.exports = class MetamaskController extends EventEmitter {
     this.initializeProvider()
     this.provider = this.networkController.getProviderAndBlockTracker().provider
     this.blockTracker = this.networkController.getProviderAndBlockTracker().blockTracker
-
-    this.counterfactualController = new CounterfactualController({
-      platform: this.platform,
-      provider: this.provider,
-    })
 
     // token exchange rate tracker
     this.tokenRatesController = new TokenRatesController({
@@ -291,6 +287,19 @@ module.exports = class MetamaskController extends EventEmitter {
       ProviderApprovalController: this.providerApprovalController.store,
     })
     this.memStore.subscribe(this.sendUpdate.bind(this))
+
+    const engine = this.setupProviderEngine('counterfactual.eth')
+    const cfProvider = providerFromEngine(engine)
+
+    var testProvider = new window.ethers.providers.Web3Provider(cfProvider)
+    const signer = testProvider.getSigner()
+    signer.getAddress().then(addr => {
+      console.log(addr)
+    })
+
+    this.counterfactualController = new CounterfactualController({
+      provider: cfProvider,
+    })
   }
 
   /**
@@ -1398,6 +1407,32 @@ module.exports = class MetamaskController extends EventEmitter {
    * @param {string} origin - The URI of the requesting resource.
    */
   setupProviderConnection (outStream, origin, publicApi) {
+    const getSiteMetadata = publicApi && publicApi.getSiteMetadata
+    const engine = this.setupProviderEngine(origin, getSiteMetadata)
+
+    // setup connection
+    const providerStream = createEngineStream({ engine })
+
+    pump(
+      outStream,
+      providerStream,
+      outStream,
+      (err) => {
+        // cleanup filter polyfill middleware
+        engine._middleware.forEach((mid) => {
+          if (mid.destroy && typeof mid.destroy === 'function') {
+            mid.destroy()
+          }
+        })
+        if (err) log.error(err)
+      }
+    )
+  }
+
+  /**
+   * A method for creating a provider that is safely restricted for the requesting domain.
+   **/
+  setupProviderEngine (origin, getSiteMetadata) {
     // setup json rpc engine stack
     const engine = new RpcEngine()
     const provider = this.provider
@@ -1405,6 +1440,7 @@ module.exports = class MetamaskController extends EventEmitter {
 
     // create filter polyfill middleware
     const filterMiddleware = createFilterMiddleware({ provider, blockTracker })
+
     // create subscription polyfill middleware
     const subscriptionManager = createSubscriptionManager({ provider, blockTracker })
     subscriptionManager.events.on('notification', (message) => engine.emit('notification', message))
@@ -1417,31 +1453,18 @@ module.exports = class MetamaskController extends EventEmitter {
     engine.push(subscriptionManager.middleware)
     // watch asset
     engine.push(this.preferencesController.requestWatchAsset.bind(this.preferencesController))
+    // requestAccounts
+    engine.push(this.providerApprovalController.createMiddleware({
+      origin,
+      getSiteMetadata,
+    }))
 
     // counterfactual middleware
     engine.push(createCounterfactualMiddleware(this.counterfactualController))
 
-    // requestAccounts
-    engine.push(this.providerApprovalController.createMiddleware({
-      origin,
-      getSiteMetadata: publicApi && publicApi.getSiteMetadata,
-    }))
     // forward to metamask primary provider
     engine.push(providerAsMiddleware(provider))
-
-    // setup connection
-    const providerStream = createEngineStream({ engine })
-
-    pump(
-      outStream,
-      providerStream,
-      outStream,
-      (err) => {
-        // cleanup filter polyfill middleware
-        filterMiddleware.destroy()
-        if (err) log.error(err)
-      }
-    )
+    return engine
   }
 
   /**

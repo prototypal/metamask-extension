@@ -63,13 +63,11 @@ const store = {
 }
 
 module.exports = class CounterfactualController {
-  constructor ({ platform, provider } = {}) {
+  constructor ({provider}) {
     this.nodeProviderConfig = {
       ports: {},
       eventHolder: {},
     }
-    this.platform = platform
-
     const serviceFactory = new FirebaseServiceFactory(FIREBASE_OPTIONS)
 
     const nodeMnemonic =
@@ -80,28 +78,23 @@ module.exports = class CounterfactualController {
       .set([{ key: window.MNEMONIC_PATH, value: nodeMnemonic }])
       .then(async () => {
         this.provider = new ethers.providers.Web3Provider(provider)
-        const node = await this.createNode(serviceFactory)
-        this.node = node
-
-        if (this.platform && this.platform.addMessageListener) {
-          this.platform.addMessageListener(
-            async ({ action = '', origin, data }, { tab }) => {
-              if (tab && tab.id) {
-                if (!this.nodeProviderConfig.ports[tab.id]) {
-                  this.configureMessagePorts(tab.id)
-                }
-                if (action === 'plugin_message') {
-                  await this.handlePluginMessage(
-                    data,
-                    tab,
-                    this.node)
-                }
-              }
-            }
-          )
-        }
+        // const signer = await this.provider.getSigner()
+        // const address = await signer.getAddress()
+        // console.log(address)
+        this.node = await this.createNode(serviceFactory)
       })
   }
+
+  // initialize ({metamaskController} = {}) {
+  //   if (this.isInitialized) {
+  //     return
+  //   }
+  //   this.isInitialized = true
+  //   const engine = metamaskController.setupProviderEngine('counterfactual.eth')
+  //   const cfProvider = providerFromEngine(engine)
+
+
+  // }
 
   async createNode (serviceFactory) {
     const messService = serviceFactory.createMessagingService('messaging')
@@ -117,30 +110,9 @@ module.exports = class CounterfactualController {
     return node
   }
 
-  async handlePluginMessage (data, tab, node) {
-    switch (data.message) {
-      case 'cf-node-provider:init':
-        this.cfNodeProviderInit(tab)
-        break
-    }
-  }
-
-  cfNodeProviderInit (tab) {
-    const nodeProviderInitResponse = {
-      message: 'cf-node-provider:port',
-    }
-    this.platform.sendMessage(
-      {
-        action: 'plugin_message_response',
-        data: nodeProviderInitResponse,
-      },
-      { id: tab.id }
-    )
-  }
-
   async metamaskRequestDepositStartRPC () {
     const NodeEventNameDepositStarted = 'depositStartedEvent'
-    
+
     return new Promise((resolve, _reject) => {
       this.node.once(NodeEventNameDepositStarted, data => {
         return resolve(data)
@@ -191,9 +163,9 @@ module.exports = class CounterfactualController {
 
   configureMessagePorts (tabId) {
     this.nodeProviderConfig.eventHolder[tabId] = []
-    function relayMessageToNode (event) {
-      this.node.emit(event.data.type, event.data)
-    }
+    // function relayMessageToNode (event) {
+    //   this.node.emit(event.data.type, event.data)
+    // }
 
     function relayMessageToDapp (event) {
       try {
@@ -234,12 +206,7 @@ module.exports = class CounterfactualController {
     )
     this.node.on('uninstallEvent', relayMessageToDapp.bind(this))
 
-    const backgroundPort = this.platform.tabsConnect(tabId, 'cfNodeProvider')
-    this.nodeProviderConfig.ports[tabId] = backgroundPort
-    backgroundPort.onMessage.addListener(relayMessageToNode.bind(this))
-    backgroundPort.onDisconnect.addListener(() => {
-      delete this.nodeProviderConfig.ports[tabId]
-    })
+    // Need to relayMessageToNode
   }
 
   async playgroundRequestMatchmakeRPC () {
