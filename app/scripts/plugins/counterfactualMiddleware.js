@@ -2,9 +2,10 @@ const createAsyncMiddleware = require('json-rpc-engine/src/createAsyncMiddleware
 
 module.exports = createCounterfactualMiddleware
 
-function createCounterfactualMiddleware (counterfactualController) {
+function createCounterfactualMiddleware (counterfactualController, metamaskController) {
   return createAsyncMiddleware(async function counterfactualMiddleware (req, res, next) {
     if (req.method.includes('counterfactual')) {
+      await counterfactualController.initialize({metamaskController})
       switch (req.method) {
           case 'counterfactual:set:user':
             window.localStorage.setItem('playground:user:token', req.params[0])

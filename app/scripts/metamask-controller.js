@@ -288,18 +288,7 @@ module.exports = class MetamaskController extends EventEmitter {
     })
     this.memStore.subscribe(this.sendUpdate.bind(this))
 
-    const engine = this.setupProviderEngine('counterfactual.eth')
-    const cfProvider = providerFromEngine(engine)
-
-    var testProvider = new window.ethers.providers.Web3Provider(cfProvider)
-    const signer = testProvider.getSigner()
-    signer.getAddress().then(addr => {
-      console.log(addr)
-    })
-
-    this.counterfactualController = new CounterfactualController({
-      provider: cfProvider,
-    })
+    this.counterfactualController = new CounterfactualController({})
   }
 
   /**
@@ -1460,7 +1449,7 @@ module.exports = class MetamaskController extends EventEmitter {
     }))
 
     // counterfactual middleware
-    engine.push(createCounterfactualMiddleware(this.counterfactualController))
+    engine.push(createCounterfactualMiddleware(this.counterfactualController, this))
 
     // forward to metamask primary provider
     engine.push(providerAsMiddleware(provider))

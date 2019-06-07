@@ -2,9 +2,10 @@ const Node = window.Node
 const FirebaseServiceFactory = window.FirebaseServiceFactory
 const ethers = window.ethers
 const uuid = require('uuid')
+const providerFromEngine = require('eth-json-rpc-middleware/providerFromEngine')
 
-// const ENV = 'dev'
-const ENV = 'staging'
+const ENV = 'dev'
+// const ENV = 'staging'
 
 const FIREBASE_OPTIONS =
   ENV === 'dev'
@@ -63,38 +64,36 @@ const store = {
 }
 
 module.exports = class CounterfactualController {
-  constructor ({provider}) {
+  constructor () {
     this.nodeProviderConfig = {
       ports: {},
       eventHolder: {},
     }
+  }
+
+  async initialize ({metamaskController} = {}) {
+    if (this.isInitialized) {
+      return
+    }
+    this.isInitialized = true
+
+    const engine = metamaskController.setupProviderEngine('MetaMask')
+    const cfProvider = providerFromEngine(engine)
+
     const serviceFactory = new FirebaseServiceFactory(FIREBASE_OPTIONS)
 
     const nodeMnemonic =
       JSON.parse(window.localStorage.getItem(window.MNEMONIC_PATH)) ||
       ethers.Wallet.createRandom().mnemonic
 
-    store
-      .set([{ key: window.MNEMONIC_PATH, value: nodeMnemonic }])
-      .then(async () => {
-        this.provider = new ethers.providers.Web3Provider(provider)
-        // const signer = await this.provider.getSigner()
-        // const address = await signer.getAddress()
-        // console.log(address)
-        this.node = await this.createNode(serviceFactory)
-      })
+    await store.set([{ key: window.MNEMONIC_PATH, value: nodeMnemonic }])
+    this.provider = new ethers.providers.Web3Provider(cfProvider)
+    const signer = await this.provider.getSigner()
+    const address = await signer.getAddress()
+    console.log(address)
+    this.node = await this.createNode(serviceFactory)
+    console.log("--- Node ---", this.node); 
   }
-
-  // initialize ({metamaskController} = {}) {
-  //   if (this.isInitialized) {
-  //     return
-  //   }
-  //   this.isInitialized = true
-  //   const engine = metamaskController.setupProviderEngine('counterfactual.eth')
-  //   const cfProvider = providerFromEngine(engine)
-
-
-  // }
 
   async createNode (serviceFactory) {
     const messService = serviceFactory.createMessagingService('messaging')

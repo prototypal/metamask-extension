@@ -49,7 +49,8 @@ export default class Home extends PureComponent {
 
   showPluginOrTxView () {
     if (this.props.selectedPluginUid) {
-      const isDev = false;
+      // const isDev = false;
+      const isDev = true;
       const src = isDev ? 'http://localhost:3334' : 'https://awesome-johnson-66964e.netlify.com'
       return <div className="transaction-view">
               <iframe src={src} style={{height: '100%'}}/>
