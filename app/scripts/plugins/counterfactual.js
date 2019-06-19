@@ -92,7 +92,7 @@ module.exports = class CounterfactualController {
     const address = await signer.getAddress()
     console.log(address)
     this.node = await this.createNode(serviceFactory)
-    console.log("--- Node ---", this.node); 
+    console.log('--- Node ---', this.node)
   }
 
   async createNode (serviceFactory) {
@@ -117,7 +117,7 @@ module.exports = class CounterfactualController {
         return resolve(data)
       })
     })
-      }
+  }
 
   async metamaskRequestDepositRPC (amount, multisigAddress) {
     try {
@@ -158,54 +158,23 @@ module.exports = class CounterfactualController {
 
   metamaskGetNodeAddressRPC () {
     return this.node.publicIdentifier
-          }
+  }
 
-  configureMessagePorts (tabId) {
-    this.nodeProviderConfig.eventHolder[tabId] = []
-    // function relayMessageToNode (event) {
-    //   this.node.emit(event.data.type, event.data)
-    // }
+  relayMessageToNodeRPC (message) {
+    this.node.emit(message.type, message)
 
-    function relayMessageToDapp (event) {
-      try {
-        if (!this.nodeProviderConfig.eventHolder[tabId].includes(event.type)) {
-          // We only allow the same event type to be called in 20ms intervals to prevent multiple
-          // messages being emitted for the same event
-          this.nodeProviderConfig.eventHolder[tabId].push(event.type)
-          this.nodeProviderConfig.ports[tabId].postMessage({
-            name: 'cfNodeProvider',
-            event,
-          })
-          window.setTimeout(() => {
-            this.nodeProviderConfig.eventHolder[tabId].pop(event.type)
-          }, 20)
-        }
-      } catch (error) {
-        // There is sometimes a race condition where nodeProviderConfig.ports[tabId] is undefined
+    return new Promise((resolve, _reject) => {
+      function relayMessageToDapp (event) {
+        return resolve(event)
       }
-    }
-
-    this.node.on(
-      'proposeInstallVirtual',
-      relayMessageToDapp.bind(this)
-    )
-    this.node.on(
-      'installVirtualEvent',
-      relayMessageToDapp.bind(this)
-    )
-    this.node.on(
-      'getAppInstanceDetails',
-      relayMessageToDapp.bind(this)
-    )
-    this.node.on('getState', relayMessageToDapp.bind(this))
-    this.node.on('takeAction', relayMessageToDapp.bind(this))
-    this.node.on(
-      'updateStateEvent',
-      relayMessageToDapp.bind(this)
-    )
-    this.node.on('uninstallEvent', relayMessageToDapp.bind(this))
-
-    // Need to relayMessageToNode
+      this.node.once('proposeInstallVirtual', relayMessageToDapp.bind(this))
+      this.node.once('installVirtualEvent', relayMessageToDapp.bind(this))
+      this.node.once('getAppInstanceDetails', relayMessageToDapp.bind(this))
+      this.node.once('getState', relayMessageToDapp.bind(this))
+      this.node.once('takeAction', relayMessageToDapp.bind(this))
+      this.node.once('updateStateEvent', relayMessageToDapp.bind(this))
+      this.node.once('uninstallEvent', relayMessageToDapp.bind(this))
+    })
   }
 
   async playgroundRequestMatchmakeRPC () {
