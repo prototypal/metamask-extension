@@ -63,6 +63,16 @@ const store = {
   },
 }
 
+const NODE_EVENTS = [
+  'proposeInstallVirtual',
+  'installVirtualEvent',
+  'getAppInstanceDetails',
+  'getState',
+  'takeAction',
+  'updateStateEvent',
+  'uninstallEvent',
+]
+
 module.exports = class CounterfactualController {
   constructor () {
     this.nodeProviderConfig = {
@@ -165,15 +175,14 @@ module.exports = class CounterfactualController {
 
     return new Promise((resolve, _reject) => {
       function relayMessageToDapp (event) {
+        NODE_EVENTS.forEach(event => {
+          this.node.off(event, relayMessageToDapp.bind(this))
+        })
         return resolve(event)
       }
-      this.node.once('proposeInstallVirtual', relayMessageToDapp.bind(this))
-      this.node.once('installVirtualEvent', relayMessageToDapp.bind(this))
-      this.node.once('getAppInstanceDetails', relayMessageToDapp.bind(this))
-      this.node.once('getState', relayMessageToDapp.bind(this))
-      this.node.once('takeAction', relayMessageToDapp.bind(this))
-      this.node.once('updateStateEvent', relayMessageToDapp.bind(this))
-      this.node.once('uninstallEvent', relayMessageToDapp.bind(this))
+      NODE_EVENTS.forEach(event => {
+        this.node.once(event, relayMessageToDapp.bind(this))
+      })
     })
   }
 
