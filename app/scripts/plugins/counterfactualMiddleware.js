@@ -37,8 +37,10 @@ function createCounterfactualMiddleware (counterfactualController, metamaskContr
             res.result = await counterfactualController.cfNodeProviderInit()
             break
           default:
-            if (req.method.includes('nodeProvider')) {
+            if (req.method.includes('nodeProvider:request')) {
               res.result = await counterfactualController.relayMessageToNodeRPC(req.params[0])
+            } else if (req.method.includes('nodeProvider:event')) {
+              res.result = await counterfactualController.waitForNodeEvent(req.params[0])
             } else {
               res.result = {name: 'hooray', does: 'thiswork'}
             }

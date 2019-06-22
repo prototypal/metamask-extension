@@ -186,6 +186,16 @@ module.exports = class CounterfactualController {
     })
   }
 
+  waitForNodeEvent (event) {
+    return new Promise((resolve, _reject) => {
+      function relayMessageToDapp (event) {
+        this.node.off(event, relayMessageToDapp.bind(this))
+        return resolve(event)
+      }
+      this.node.once(event, relayMessageToDapp.bind(this))
+    })
+  }
+
   async playgroundRequestMatchmakeRPC () {
     const userToken = this.getUserToken()
     const matchmakeData = {
