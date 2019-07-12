@@ -218,6 +218,7 @@ module.exports = class CounterfactualController {
 
   async playgroundRequestUserRPC () {
     const userToken = this.getUserToken()
+    if (!userToken) return
     const response = await fetch(`${BASE_URL}/api/users/me`, {
       method: 'GET',
       headers: {
