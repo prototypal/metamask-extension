@@ -2,6 +2,10 @@ this.window = this.window || {};
 this.window.cf = (function (exports, utils$1) {
 	'use strict';
 
+	function unwrapExports (x) {
+		return x && x.__esModule && Object.prototype.hasOwnProperty.call(x, 'default') ? x['default'] : x;
+	}
+
 	function createCommonjsModule(fn, module) {
 		return module = { exports: {} }, fn(module, module.exports), module.exports;
 	}
@@ -414,7 +418,6 @@ this.window.cf = (function (exports, utils$1) {
 	        const context = window.parent || window;
 	        this.log("connect", "Attempting to connect");
 	        return new Promise((resolve, reject) => {
-	            let receivedPort = false;
 	            window.addEventListener("message", event => {
 	                if (event.data === "cf-node-provider:port") {
 	                    this.log("connect", "Received message via window.onMessage event", "cf-node-provider-port");
@@ -422,28 +425,8 @@ this.window.cf = (function (exports, utils$1) {
 	                    this.notifyNodeProviderIsConnected();
 	                    resolve(this);
 	                }
-	                else if (event.data.type === "plugin_message_response") {
-	                    if (event.data.data.message === "cf-node-provider:port") {
-	                        if (receivedPort) {
-	                            return;
-	                        }
-	                        receivedPort = true;
-	                        this.log("connect", "Received message via window.onMessage event", "cf-node-provider-port");
-	                        this.startMessagePort(event);
-	                        this.notifyNodeProviderIsConnected();
-	                        resolve(this);
-	                    }
-	                }
 	            });
-	            if (window === window.parent) {
-	                window.postMessage({
-	                    type: "PLUGIN_MESSAGE",
-	                    data: { message: "cf-node-provider:init" }
-	                }, "*");
-	            }
-	            else {
-	                context.postMessage("cf-node-provider:init", "*");
-	            }
+	            context.postMessage("cf-node-provider:init", "*");
 	            this.log("connect", "used window.postMessage() to send", "cf-node-provider:init");
 	        });
 	    }
@@ -457,38 +440,25 @@ this.window.cf = (function (exports, utils$1) {
 	        this.log("startMessagePort", "messagePort has started");
 	    }
 	    notifyNodeProviderIsConnected() {
-	        if (window === window.parent) {
-	            window.postMessage({
-	                type: "PLUGIN_MESSAGE",
-	                data: { message: "cf-node-provider:ready" }
-	            }, "*");
-	        }
-	        else {
-	            window.postMessage("cf-node-provider:ready", "*");
-	        }
+	        window.postMessage("cf-node-provider:ready", "*");
 	        this.log("notifyNodeProviderIsConnected", "used window.postMessage() to send:", "cf-node-provider:ready");
 	        this.isConnected = true;
 	        this.log("notifyNodeProviderIsConnected", "Connection successful");
 	    }
 	}
 
-	var AssetType;
-	(function (AssetType) {
-	    AssetType[AssetType["ETH"] = 0] = "ETH";
-	    AssetType[AssetType["ERC20"] = 1] = "ERC20";
-	})(AssetType || (AssetType = {}));
-
 	var OutcomeType;
 	(function (OutcomeType) {
-	    OutcomeType[OutcomeType["TWO_PARTY_OUTCOME"] = 0] = "TWO_PARTY_OUTCOME";
-	    OutcomeType[OutcomeType["ETH_TRANSFER"] = 1] = "ETH_TRANSFER";
+	    OutcomeType[OutcomeType["TWO_PARTY_FIXED_OUTCOME"] = 0] = "TWO_PARTY_FIXED_OUTCOME";
+	    OutcomeType[OutcomeType["TWO_PARTY_DYNAMIC_OUTCOME"] = 1] = "TWO_PARTY_DYNAMIC_OUTCOME";
+	    OutcomeType[OutcomeType["COIN_TRANSFER"] = 2] = "COIN_TRANSFER";
 	})(OutcomeType || (OutcomeType = {}));
-	var TwoPartyOutcome;
-	(function (TwoPartyOutcome) {
-	    TwoPartyOutcome[TwoPartyOutcome["SEND_TO_ADDR_ONE"] = 0] = "SEND_TO_ADDR_ONE";
-	    TwoPartyOutcome[TwoPartyOutcome["SEND_TO_ADDR_TWO"] = 1] = "SEND_TO_ADDR_TWO";
-	    TwoPartyOutcome[TwoPartyOutcome["SPLIT_AND_SEND_TO_BOTH_ADDRS"] = 2] = "SPLIT_AND_SEND_TO_BOTH_ADDRS";
-	})(TwoPartyOutcome || (TwoPartyOutcome = {}));
+	var TwoPartyFixedOutcome;
+	(function (TwoPartyFixedOutcome) {
+	    TwoPartyFixedOutcome[TwoPartyFixedOutcome["SEND_TO_ADDR_ONE"] = 0] = "SEND_TO_ADDR_ONE";
+	    TwoPartyFixedOutcome[TwoPartyFixedOutcome["SEND_TO_ADDR_TWO"] = 1] = "SEND_TO_ADDR_TWO";
+	    TwoPartyFixedOutcome[TwoPartyFixedOutcome["SPLIT_AND_SEND_TO_BOTH_ADDRS"] = 2] = "SPLIT_AND_SEND_TO_BOTH_ADDRS";
+	})(TwoPartyFixedOutcome || (TwoPartyFixedOutcome = {}));
 
 	var Node;
 	(function (Node) {
@@ -504,9 +474,12 @@ this.window.cf = (function (exports, utils$1) {
 	        MethodName["GET_APP_INSTANCE_DETAILS"] = "getAppInstanceDetails";
 	        MethodName["GET_APP_INSTANCES"] = "getAppInstances";
 	        MethodName["GET_CHANNEL_ADDRESSES"] = "getChannelAddresses";
+	        MethodName["GET_STATE_DEPOSIT_HOLDER_ADDRESS"] = "getStateDepositHolderAddress";
 	        MethodName["GET_FREE_BALANCE_STATE"] = "getFreeBalanceState";
+	        MethodName["GET_PROPOSED_APP_INSTANCE"] = "getProposedAppInstance";
 	        MethodName["GET_PROPOSED_APP_INSTANCES"] = "getProposedAppInstances";
 	        MethodName["GET_STATE"] = "getState";
+	        MethodName["GET_STATE_CHANNEL"] = "getStateChannel";
 	        MethodName["INSTALL"] = "install";
 	        MethodName["INSTALL_VIRTUAL"] = "installVirtual";
 	        MethodName["PROPOSE_INSTALL"] = "proposeInstall";
@@ -520,6 +493,29 @@ this.window.cf = (function (exports, utils$1) {
 	        MethodName["UNINSTALL_VIRTUAL"] = "uninstallVirtual";
 	        MethodName["WITHDRAW"] = "withdraw";
 	    })(MethodName = Node.MethodName || (Node.MethodName = {}));
+	    let RpcMethodName;
+	    (function (RpcMethodName) {
+	        RpcMethodName["CREATE_CHANNEL"] = "chan_create";
+	        RpcMethodName["DEPOSIT"] = "chan_deposit";
+	        RpcMethodName["GET_APP_INSTANCE_DETAILS"] = "chan_getAppInstance";
+	        RpcMethodName["GET_APP_INSTANCES"] = "chan_getAppInstances";
+	        RpcMethodName["GET_STATE_DEPOSIT_HOLDER_ADDRESS"] = "chan_getStateDepositHolderAddress";
+	        RpcMethodName["GET_FREE_BALANCE_STATE"] = "chan_getFreeBalanceState";
+	        RpcMethodName["GET_PROPOSED_APP_INSTANCES"] = "chan_getProposedAppInstances";
+	        RpcMethodName["GET_STATE"] = "chan_getState";
+	        RpcMethodName["INSTALL"] = "chan_install";
+	        RpcMethodName["INSTALL_VIRTUAL"] = "chan_installVirtual";
+	        RpcMethodName["PROPOSE_INSTALL"] = "chan_proposeInstall";
+	        RpcMethodName["PROPOSE_INSTALL_VIRTUAL"] = "chan_proposeInstallVirtual";
+	        RpcMethodName["PROPOSE_STATE"] = "chan_proposeState";
+	        RpcMethodName["REJECT_INSTALL"] = "chan_rejectInstall";
+	        RpcMethodName["REJECT_STATE"] = "chan_rejectState";
+	        RpcMethodName["UPDATE_STATE"] = "chan_updateState";
+	        RpcMethodName["TAKE_ACTION"] = "chan_takeAction";
+	        RpcMethodName["UNINSTALL"] = "chan_uninstall";
+	        RpcMethodName["UNINSTALL_VIRTUAL"] = "chan_uninstallVirtual";
+	        RpcMethodName["WITHDRAW"] = "chan_withdraw";
+	    })(RpcMethodName = Node.RpcMethodName || (Node.RpcMethodName = {}));
 	    let EventName;
 	    (function (EventName) {
 	        EventName["COUNTER_DEPOSIT_CONFIRMED"] = "counterDepositConfirmed";
@@ -582,8 +578,8 @@ this.window.cf = (function (exports, utils$1) {
 	    }
 	}
 	class AppFactory {
-	    constructor(appId, encodings, provider) {
-	        this.appId = appId;
+	    constructor(appDefinition, encodings, provider) {
+	        this.appDefinition = appDefinition;
 	        this.encodings = encodings;
 	        this.provider = provider;
 	    }
@@ -591,15 +587,15 @@ this.window.cf = (function (exports, utils$1) {
 	        const timeout = parseBigNumber(params.timeout, "timeout");
 	        const myDeposit = parseBigNumber(params.myDeposit, "myDeposit");
 	        const peerDeposit = parseBigNumber(params.peerDeposit, "peerDeposit");
-	        const response = await this.provider.callRawNodeMethod(Node.MethodName.PROPOSE_INSTALL, {
+	        const response = await this.provider.callRawNodeMethod(Node.RpcMethodName.PROPOSE_INSTALL, {
 	            timeout,
 	            peerDeposit,
 	            myDeposit,
-	            asset: params.asset,
 	            proposedToIdentifier: params.proposedToIdentifier,
 	            initialState: params.initialState,
-	            appId: this.appId,
-	            abiEncodings: this.encodings
+	            appDefinition: this.appDefinition,
+	            abiEncodings: this.encodings,
+	            outcomeType: params.outcomeType
 	        });
 	        const { appInstanceId } = response.result;
 	        return appInstanceId;
@@ -608,21 +604,184 @@ this.window.cf = (function (exports, utils$1) {
 	        const timeout = parseBigNumber(params.timeout, "timeout");
 	        const myDeposit = parseBigNumber(params.myDeposit, "myDeposit");
 	        const peerDeposit = parseBigNumber(params.peerDeposit, "peerDeposit");
-	        const response = await this.provider.callRawNodeMethod(Node.MethodName.PROPOSE_INSTALL_VIRTUAL, {
+	        const response = await this.provider.callRawNodeMethod(Node.RpcMethodName.PROPOSE_INSTALL_VIRTUAL, {
 	            timeout,
 	            peerDeposit,
 	            myDeposit,
-	            asset: params.asset,
 	            proposedToIdentifier: params.proposedToIdentifier,
 	            initialState: params.initialState,
 	            intermediaries: params.intermediaries,
-	            appId: this.appId,
-	            abiEncodings: this.encodings
+	            appDefinition: this.appDefinition,
+	            abiEncodings: this.encodings,
+	            outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME
 	        });
 	        const { appInstanceId } = response.result;
 	        return appInstanceId;
 	    }
 	}
+
+	var controller = createCommonjsModule(function (module, exports) {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	class Controller {
+	}
+	Controller.rpcMethods = {};
+	exports.default = Controller;
+
+	});
+
+	unwrapExports(controller);
+
+	var router = createCommonjsModule(function (module, exports) {
+	Object.defineProperty(exports, "__esModule", { value: true });
+
+	class Router {
+	    constructor({ controllers }) {
+	        this.controllers = controllers;
+	    }
+	    async dispatch(rpc) {
+	        const controller$1 = Object.values(controller.default.rpcMethods).find(mapping => mapping.method === rpc.methodName);
+	        if (!controller$1) {
+	            console.warn(`Cannot execute ${rpc.methodName}: no controller`);
+	            return;
+	        }
+	        return new controller$1.type()[controller$1.callback](rpc.parameters);
+	    }
+	}
+	exports.default = Router;
+
+	});
+
+	unwrapExports(router);
+
+	var jsonapi = createCommonjsModule(function (module, exports) {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	function jsonApiType(name) {
+	    return (target) => {
+	        target.jsonapiType = name;
+	        const functions = Object.getOwnPropertyNames(target.prototype).filter(key => key !== "constructor");
+	        // Type overriden operations.
+	        functions
+	            .filter(func => Object.values(target.rpcMethods).find(method => method.callback === func))
+	            .forEach(method => {
+	            const descriptor = Object.entries(target.rpcMethods).find(([, mapping]) => mapping.callback === method && mapping.method.includes("[type]"));
+	            if (!descriptor) {
+	                return;
+	            }
+	            const [key, originalMapping] = descriptor;
+	            target.rpcMethods[key] = {
+	                ...target.rpcMethods[key],
+	                method: originalMapping.method.replace("[type]", target.jsonapiType)
+	            };
+	        });
+	        // Map new functions.
+	        functions
+	            .filter(func => !Object.values(target.rpcMethods).find(method => method.callback === func))
+	            .forEach(method => {
+	            jsonApiOperation(method, target)(target.prototype, method);
+	        });
+	    };
+	}
+	exports.jsonApiType = jsonApiType;
+	function jsonApiOperation(name, forcedConstructor) {
+	    return (target, propertyKey) => {
+	        const constructor = forcedConstructor || target.constructor;
+	        const key = `${target.constructor.name}:${name}`;
+	        constructor.rpcMethods[key] = {
+	            method: `${constructor.jsonapiType || "[type]"}:${name}`,
+	            callback: propertyKey,
+	            type: constructor
+	        };
+	    };
+	}
+	exports.jsonApiOperation = jsonApiOperation;
+	function jsonApiDeserialize(payload) {
+	    return {
+	        methodName: `${payload.ref.type}:${payload.op}`,
+	        parameters: payload
+	    };
+	}
+	exports.jsonApiDeserialize = jsonApiDeserialize;
+
+	});
+
+	unwrapExports(jsonapi);
+	var jsonapi_1 = jsonapi.jsonApiType;
+	var jsonapi_2 = jsonapi.jsonApiOperation;
+	var jsonapi_3 = jsonapi.jsonApiDeserialize;
+
+	var jsonrpc = createCommonjsModule(function (module, exports) {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	function jsonRpcMethod(name) {
+	    return (target, propertyKey) => {
+	        const constructor = target.constructor;
+	        constructor.rpcMethods[`${constructor.name}:${name}`] = {
+	            method: name,
+	            callback: propertyKey,
+	            type: constructor
+	        };
+	    };
+	}
+	exports.jsonRpcMethod = jsonRpcMethod;
+	function jsonRpcDeserialize(payload) {
+	    return {
+	        methodName: payload.method,
+	        parameters: payload.params,
+	        id: payload.id
+	    };
+	}
+	exports.jsonRpcDeserialize = jsonRpcDeserialize;
+	function jsonRpcSerializeAsResponse(result, id) {
+	    return {
+	        jsonrpc: "2.0",
+	        result,
+	        id
+	    };
+	}
+	exports.jsonRpcSerializeAsResponse = jsonRpcSerializeAsResponse;
+	function jsonRpcSerializeAsNotification(result) {
+	    return {
+	        jsonrpc: "2.0",
+	        result
+	    };
+	}
+	exports.jsonRpcSerializeAsNotification = jsonRpcSerializeAsNotification;
+
+	});
+
+	unwrapExports(jsonrpc);
+	var jsonrpc_1 = jsonrpc.jsonRpcMethod;
+	var jsonrpc_2 = jsonrpc.jsonRpcDeserialize;
+	var jsonrpc_3 = jsonrpc.jsonRpcSerializeAsResponse;
+	var jsonrpc_4 = jsonrpc.jsonRpcSerializeAsNotification;
+
+	var dist = createCommonjsModule(function (module, exports) {
+	Object.defineProperty(exports, "__esModule", { value: true });
+
+	exports.Controller = controller.default;
+
+	exports.Router = router.default;
+
+	exports.jsonApiType = jsonapi.jsonApiType;
+	exports.jsonApiOperation = jsonapi.jsonApiOperation;
+	exports.jsonApiDeserialize = jsonapi.jsonApiDeserialize;
+
+	exports.jsonRpcDeserialize = jsonrpc.jsonRpcDeserialize;
+	exports.jsonRpcMethod = jsonrpc.jsonRpcMethod;
+	exports.jsonRpcSerializeAsNotification = jsonrpc.jsonRpcSerializeAsNotification;
+	exports.jsonRpcSerializeAsResponse = jsonrpc.jsonRpcSerializeAsResponse;
+
+	});
+
+	unwrapExports(dist);
+	var dist_1 = dist.Controller;
+	var dist_2 = dist.Router;
+	var dist_3 = dist.jsonApiType;
+	var dist_4 = dist.jsonApiOperation;
+	var dist_5 = dist.jsonApiDeserialize;
+	var dist_6 = dist.jsonRpcDeserialize;
+	var dist_7 = dist.jsonRpcMethod;
+	var dist_8 = dist.jsonRpcSerializeAsNotification;
+	var dist_9 = dist.jsonRpcSerializeAsResponse;
 
 	var AppInstanceEventType;
 	(function (AppInstanceEventType) {
@@ -635,29 +794,31 @@ this.window.cf = (function (exports, utils$1) {
 	        this.provider = provider;
 	        this.eventEmitter = new eventemitter3();
 	        this.validEventTypes = Object.keys(AppInstanceEventType).map(key => AppInstanceEventType[key]);
-	        this.id = info.id;
-	        this.appId = info.appId;
+	        this.identityHash = info.identityHash;
+	        this.appDefinition = info.appDefinition;
 	        this.abiEncodings = info.abiEncodings;
-	        this.asset = info.asset;
+	        this.timeout = info.timeout;
 	        this.myDeposit = info.myDeposit;
 	        this.peerDeposit = info.peerDeposit;
-	        this.timeout = info.timeout;
+	        this.twoPartyOutcomeInterpreterParams =
+	            info.twoPartyOutcomeInterpreterParams;
+	        this.coinTransferInterpreterParams = info.coinTransferInterpreterParams;
 	        this.intermediaries = info.intermediaries;
 	    }
 	    get isVirtual() {
 	        return !!(this.intermediaries && this.intermediaries.length !== 0);
 	    }
 	    async getState() {
-	        const response = await this.provider.callRawNodeMethod(Node.MethodName.GET_STATE, {
-	            appInstanceId: this.id
+	        const response = await this.provider.callRawNodeMethod(Node.RpcMethodName.GET_STATE, {
+	            appInstanceId: this.identityHash
 	        });
 	        const result = response.result;
 	        return result.state;
 	    }
 	    async takeAction(action) {
-	        const response = await this.provider.callRawNodeMethod(Node.MethodName.TAKE_ACTION, {
+	        const response = await this.provider.callRawNodeMethod(Node.RpcMethodName.TAKE_ACTION, {
 	            action,
-	            appInstanceId: this.id
+	            appInstanceId: this.identityHash
 	        });
 	        const result = response.result;
 	        return result.newState;
@@ -667,10 +828,10 @@ this.window.cf = (function (exports, utils$1) {
 	            ? this.intermediaries[0]
 	            : undefined;
 	        await this.provider.callRawNodeMethod(intermediaryIdentifier
-	            ? Node.MethodName.UNINSTALL_VIRTUAL
-	            : Node.MethodName.UNINSTALL, {
+	            ? Node.RpcMethodName.UNINSTALL_VIRTUAL
+	            : Node.RpcMethodName.UNINSTALL, {
 	            intermediaryIdentifier,
-	            appInstanceId: this.id
+	            appInstanceId: this.identityHash
 	        });
 	    }
 	    on(eventType, callback) {
@@ -695,6 +856,20 @@ this.window.cf = (function (exports, utils$1) {
 	    }
 	}
 
+	const jsonRpcMethodNames = {
+	    [Node.MethodName.GET_APP_INSTANCE_DETAILS]: "chan_getAppInstance",
+	    [Node.MethodName.GET_APP_INSTANCES]: "chan_getAppInstances",
+	    [Node.MethodName.GET_PROPOSED_APP_INSTANCES]: "chan_getProposedAppInstances",
+	    [Node.MethodName.GET_STATE]: "chan_getState",
+	    [Node.MethodName.INSTALL]: "chan_install",
+	    [Node.MethodName.INSTALL_VIRTUAL]: "chan_installVirtual",
+	    [Node.MethodName.PROPOSE_INSTALL]: "chan_proposeInstall",
+	    [Node.MethodName.PROPOSE_INSTALL_VIRTUAL]: "chan_proposeInstallVirtual",
+	    [Node.MethodName.REJECT_INSTALL]: "chan_rejectInstall",
+	    [Node.MethodName.TAKE_ACTION]: "chan_takeAction",
+	    [Node.MethodName.UNINSTALL]: "chan_uninstall",
+	    [Node.MethodName.UNINSTALL_VIRTUAL]: "uninstallVirtual"
+	};
 	const NODE_REQUEST_TIMEOUT = 20000;
 	class Provider {
 	    constructor(nodeProvider) {
@@ -702,24 +877,23 @@ this.window.cf = (function (exports, utils$1) {
 	        this.requestListeners = {};
 	        this.eventEmitter = new eventemitter3();
 	        this.appInstances = {};
-	        this.validEventTypes = Object.keys(EventType).map(key => EventType[key]);
 	        this.nodeProvider.onMessage(this.onNodeMessage.bind(this));
 	        this.setupAppInstanceEventListeners();
 	    }
 	    async getAppInstances() {
-	        const response = await this.callRawNodeMethod(Node.MethodName.GET_APP_INSTANCES, {});
+	        const response = await this.callRawNodeMethod(Node.RpcMethodName.GET_APP_INSTANCES, {});
 	        const result = response.result;
-	        return Promise.all(result.appInstances.map(info => this.getOrCreateAppInstance(info.id, info)));
+	        return Promise.all(result.appInstances.map(info => this.getOrCreateAppInstance(info.identityHash, info)));
 	    }
 	    async install(appInstanceId) {
-	        const response = await this.callRawNodeMethod(Node.MethodName.INSTALL, {
+	        const response = await this.callRawNodeMethod(Node.RpcMethodName.INSTALL, {
 	            appInstanceId
 	        });
 	        const { appInstance } = response.result;
 	        return this.getOrCreateAppInstance(appInstanceId, appInstance);
 	    }
 	    async installVirtual(appInstanceId, intermediaries) {
-	        const response = await this.callRawNodeMethod(Node.MethodName.INSTALL_VIRTUAL, {
+	        const response = await this.callRawNodeMethod(Node.RpcMethodName.INSTALL_VIRTUAL, {
 	            appInstanceId,
 	            intermediaries
 	        });
@@ -727,7 +901,7 @@ this.window.cf = (function (exports, utils$1) {
 	        return this.getOrCreateAppInstance(appInstanceId, appInstance);
 	    }
 	    async rejectInstall(appInstanceId) {
-	        await this.callRawNodeMethod(Node.MethodName.REJECT_INSTALL, {
+	        await this.callRawNodeMethod(Node.RpcMethodName.REJECT_INSTALL, {
 	            appInstanceId
 	        });
 	    }
@@ -744,30 +918,40 @@ this.window.cf = (function (exports, utils$1) {
 	        this.eventEmitter.off(eventType, callback);
 	    }
 	    async callRawNodeMethod(methodName, params) {
-	        const requestId = new Date().valueOf().toString();
+	        const requestId = new Date().valueOf();
 	        return new Promise((resolve, reject) => {
-	            const request = {
-	                requestId,
+	            const request = dist_6({
 	                params,
-	                type: methodName
-	            };
-	            this.requestListeners[requestId] = response => {
-	                if (response.type === Node.ErrorType.ERROR) {
-	                    return reject({
+	                jsonrpc: "2.0",
+	                method: methodName,
+	                id: requestId
+	            });
+	            if (!request.methodName) {
+	                return this.handleNodeError({
+	                    jsonrpc: "2.0",
+	                    result: {
 	                        type: EventType.ERROR,
-	                        data: response.data
-	                    });
+	                        data: {
+	                            errorName: "unexpected_event_type"
+	                        }
+	                    },
+	                    id: requestId
+	                });
+	            }
+	            this.requestListeners[requestId] = response => {
+	                if (response.result.type === Node.ErrorType.ERROR) {
+	                    return reject(dist_9(Object.assign({}, response.result, { type: EventType.ERROR }), requestId));
 	                }
-	                if (response.type !== methodName) {
-	                    return reject({
+	                if (response.result.type !== methodName) {
+	                    return reject(dist_9({
 	                        type: EventType.ERROR,
 	                        data: {
 	                            errorName: "unexpected_message_type",
-	                            message: `Unexpected response type. Expected ${methodName}, got ${response.type}`
+	                            message: `Unexpected response type. Expected ${methodName}, got ${response.result.type}`
 	                        }
-	                    });
+	                    }, requestId));
 	                }
-	                resolve(response);
+	                resolve(response.result);
 	            };
 	            setTimeout(() => {
 	                if (this.requestListeners[requestId] !== undefined) {
@@ -791,7 +975,7 @@ this.window.cf = (function (exports, utils$1) {
 	                newInfo = info;
 	            }
 	            else {
-	                const { result } = await this.callRawNodeMethod(Node.MethodName.GET_APP_INSTANCE_DETAILS, { appInstanceId: id });
+	                const { result } = await this.callRawNodeMethod(Node.RpcMethodName.GET_APP_INSTANCE_DETAILS, { appInstanceId: id });
 	                newInfo = result.appInstance;
 	            }
 	            this.appInstances[id] = new AppInstance(newInfo, this);
@@ -799,16 +983,15 @@ this.window.cf = (function (exports, utils$1) {
 	        return this.appInstances[id];
 	    }
 	    validateEventType(eventType) {
-	        if (!this.validEventTypes.includes(eventType)) {
-	            throw new Error(`"${eventType}" is not a valid event`);
-	        }
 	    }
 	    onNodeMessage(message) {
-	        const type = message.type;
+	        const type = message["jsonrpc"]
+	            ? message.result.type
+	            : message.type;
 	        if (Object.values(Node.ErrorType).indexOf(type) !== -1) {
 	            this.handleNodeError(message);
 	        }
-	        else if (message.requestId) {
+	        else if ("id" in message) {
 	            this.handleNodeMethodResponse(message);
 	        }
 	        else {
@@ -816,31 +999,34 @@ this.window.cf = (function (exports, utils$1) {
 	        }
 	    }
 	    handleNodeError(error) {
-	        const requestId = error.requestId;
+	        const requestId = error.id;
 	        if (requestId && this.requestListeners[requestId]) {
 	            this.requestListeners[requestId](error);
 	            delete this.requestListeners[requestId];
 	        }
-	        this.eventEmitter.emit(error.type, error);
+	        this.eventEmitter.emit(error.result.type, error.result);
 	    }
 	    handleNodeMethodResponse(response) {
-	        const { requestId } = response;
-	        if (requestId in this.requestListeners) {
-	            this.requestListeners[requestId](response);
-	            delete this.requestListeners[requestId];
+	        const { id } = response;
+	        if (id in this.requestListeners) {
+	            this.requestListeners[id](response);
+	            delete this.requestListeners[id];
 	        }
 	        else {
-	            const error = {
+	            const error = dist_9({
 	                type: EventType.ERROR,
 	                data: {
 	                    errorName: "orphaned_response",
 	                    message: `Response has no corresponding inflight request: ${JSON.stringify(response)}`
 	                }
-	            };
-	            this.eventEmitter.emit(error.type, error);
+	            }, Number(id));
+	            this.eventEmitter.emit(error.result.type, error.result);
 	        }
 	    }
-	    async handleNodeEvent(nodeEvent) {
+	    async handleNodeEvent(event) {
+	        const nodeEvent = event["jsonrpc"]
+	            ? event.result
+	            : event;
 	        switch (nodeEvent.type) {
 	            case Node.EventName.REJECT_INSTALL:
 	                return this.handleRejectInstallEvent(nodeEvent);
@@ -915,7 +1101,7 @@ this.window.cf = (function (exports, utils$1) {
 	    async handleRejectInstallEvent(nodeEvent) {
 	        const data = nodeEvent.data;
 	        const info = data.appInstance;
-	        const appInstance = await this.getOrCreateAppInstance(info.id, info);
+	        const appInstance = await this.getOrCreateAppInstance(info.identityHash, info);
 	        const event = {
 	            type: EventType.REJECT_INSTALL,
 	            data: {
