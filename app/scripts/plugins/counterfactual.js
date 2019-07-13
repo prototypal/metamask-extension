@@ -129,6 +129,16 @@ module.exports = class CounterfactualController {
     })
   }
 
+  async metamaskRequestDepositConfirmedRPC () {
+    const NodeEventNameDepositConfirmed = 'depositConfirmedEvent'
+
+    return new Promise((resolve, _reject) => {
+      this.node.once(NodeEventNameDepositConfirmed, () => {
+        return resolve("200")
+      })
+    })
+  }
+
   async metamaskRequestDepositRPC (amount, multisigAddress) {
     try {
       const NodeMethodNameDEPOSIT = 'deposit'
@@ -218,6 +228,9 @@ module.exports = class CounterfactualController {
 
   async playgroundRequestUserRPC () {
     const userToken = this.getUserToken()
+    if (!userToken) {
+      return {};
+    }
     const response = await fetch(`${BASE_URL}/api/users/me`, {
       method: 'GET',
       headers: {
