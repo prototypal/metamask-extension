@@ -241,13 +241,10 @@ module.exports = class CounterfactualController {
     })
     const data = await response.json()
     const userData = data.data[0]
-    const account = {
-      balance: '0.2',
-      user: Object.assign({
+    const account = Object.assign({
         id: userData.id,
         token: userToken,
-      }, userData.attributes),
-    }
+      }, userData.attributes)
     return account
   }
 
