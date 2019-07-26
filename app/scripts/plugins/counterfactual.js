@@ -141,16 +141,17 @@ module.exports = class CounterfactualController {
 
   async metamaskRequestDepositRPC (amount, multisigAddress) {
     try {
-      const NodeMethodNameDEPOSIT = 'deposit'
-      const result = await this.node.call(NodeMethodNameDEPOSIT, {
-        type: NodeMethodNameDEPOSIT,
-        requestId: uuid.v4(),
-        params: {
-          amount,
-          multisigAddress: multisigAddress,
-          notifyCounterparty: true,
-        },
-      })
+      const params = {
+        amount,
+        multisigAddress: multisigAddress,
+        notifyCounterparty: true,
+      }
+      const request = {
+        id: uuid.v4(),
+        methodName: "chan_deposit",
+        parameters: params,
+      }
+      const result = await this.node.rpcRouter.dispatch(request)
       return result
     } catch (e) {
       console.error(e)
@@ -167,13 +168,14 @@ module.exports = class CounterfactualController {
   }
 
   async metamaskRequestBalancesRPC (multisigAddress) {
-    const query = {
-      type: 'getFreeBalanceState',
-      requestId: uuid.v4(),
-      params: { multisigAddress },
+    const params = { multisigAddress }
+    const request = {
+      id: uuid.v4(),
+      methodName: "chan_getFreeBalanceState",
+      parameters: params,
     }
-    const response = await this.node.call(query.type, query)
-    return response.result
+    const response = await this.node.rpcRouter.dispatch(request)
+    return response.result.result
   }
 
   metamaskGetNodeAddressRPC () {
