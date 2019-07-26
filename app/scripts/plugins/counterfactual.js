@@ -74,14 +74,14 @@ const NODE_EVENTS = [
 ]
 
 module.exports = class CounterfactualController {
-  constructor () {
+  constructor() {
     this.nodeProviderConfig = {
       ports: {},
       eventHolder: {},
     }
   }
 
-  async initialize ({metamaskController} = {}) {
+  async initialize ({ metamaskController } = {}) {
     if (this.isInitialized) {
       return
     }
@@ -141,6 +141,24 @@ module.exports = class CounterfactualController {
           notifyCounterparty: true,
         },
       })
+      return result
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  async metamaskRequestWithdrawRPC (amount, multisigAddress, recipient) {
+    try {
+      const NodeMethodName = 'withdraw'
+      const result = await this.node.rpcRouter.dispatch({
+        id: Date.now(),
+        methodName: 'chan_withdraw',
+        parameters: {
+          amount,
+          recipient,
+          multisigAddress,
+        },
+      });
       return result
     } catch (e) {
       console.error(e)
