@@ -418,7 +418,6 @@ this.window.cf = (function (exports, utils$1) {
 	        const context = window.parent || window;
 	        this.log("connect", "Attempting to connect");
 	        return new Promise((resolve, reject) => {
-	            let receivedPort = false;
 	            window.addEventListener("message", event => {
 	                if (event.data === "cf-node-provider:port") {
 	                    this.log("connect", "Received message via window.onMessage event", "cf-node-provider-port");
@@ -426,28 +425,8 @@ this.window.cf = (function (exports, utils$1) {
 	                    this.notifyNodeProviderIsConnected();
 	                    resolve(this);
 	                }
-	                else if (event.data.type === "plugin_message_response") {
-	                    if (event.data.data.message === "cf-node-provider:port") {
-	                        if (receivedPort) {
-	                            return;
-	                        }
-	                        receivedPort = true;
-	                        this.log("connect", "Received message via window.onMessage event", "cf-node-provider-port");
-	                        this.startMessagePort(event);
-	                        this.notifyNodeProviderIsConnected();
-	                        resolve(this);
-	                    }
-	                }
 	            });
-	            if (window === window.parent) {
-	                window.postMessage({
-	                    type: "PLUGIN_MESSAGE",
-	                    data: { message: "cf-node-provider:init" }
-	                }, "*");
-	            }
-	            else {
-	                context.postMessage("cf-node-provider:init", "*");
-	            }
+	            context.postMessage("cf-node-provider:init", "*");
 	            this.log("connect", "used window.postMessage() to send", "cf-node-provider:init");
 	        });
 	    }
@@ -461,119 +440,8 @@ this.window.cf = (function (exports, utils$1) {
 	        this.log("startMessagePort", "messagePort has started");
 	    }
 	    notifyNodeProviderIsConnected() {
-	        if (window === window.parent) {
-	            window.postMessage({
-	                type: "PLUGIN_MESSAGE",
-	                data: { message: "cf-node-provider:ready" }
-	            }, "*");
-	        }
-	        else {
-	            window.postMessage("cf-node-provider:ready", "*");
-	        }
+	        window.postMessage("cf-node-provider:ready", "*");
 	        this.log("notifyNodeProviderIsConnected", "used window.postMessage() to send:", "cf-node-provider:ready");
-	        this.isConnected = true;
-	        this.log("notifyNodeProviderIsConnected", "Connection successful");
-	    }
-	}
-
-	class NodeProviderEthereum {
-	    constructor() {
-	        this.debugMode = "none";
-	        this.debugEmitter = _ => { };
-	        this.isConnected = false;
-	        this.eventEmitter = new eventemitter3();
-	        this.detectDebugMode();
-	    }
-	    detectDebugMode() {
-	        try {
-	            if (process && process.env.CF_NODE_PROVIDER_DEBUG) {
-	                this.debugMode = "shell";
-	                this.debugEmitter = (source, message, data) => {
-	                    console.log(`[NodeProvider] ${source}(): ${message}`);
-	                    if (data) {
-	                        console.log("   ", data);
-	                    }
-	                };
-	            }
-	        }
-	        catch (_a) {
-	            try {
-	                if (window.localStorage.getItem("cf:node-provider:debug") === "true") {
-	                    this.debugMode = "browser";
-	                    this.debugEmitter = (source, message, data) => {
-	                        console.log(["%c[NodeProvider]", `%c#${source}()`, `%c${message}`].join(" "), "color: gray;", "color: green;", "color: black;");
-	                        if (data) {
-	                            console.log("   ", data);
-	                        }
-	                    };
-	                }
-	            }
-	            catch (_b) {
-	                if (window.location.href.includes("#cf:node-provider:debug")) {
-	                    this.debugMode = "browser";
-	                    this.debugEmitter = (source, message, data) => {
-	                        console.log(["%c[NodeProvider]", `%c#${source}()`, `%c${message}`].join(" "), "color: gray;", "color: green;", "color: black;");
-	                        if (data) {
-	                            console.log("   ", data);
-	                        }
-	                    };
-	                }
-	            }
-	        }
-	    }
-	    log(source, message, data) {
-	        if (this.debugMode === "none") {
-	            return;
-	        }
-	        this.debugEmitter(source, message, data);
-	    }
-	    onMessage(callback) {
-	        this.log("onMessage", "Registered listener for eventEmitter#message", callback.toString());
-	        this.eventEmitter.on("message", callback);
-	    }
-	    sendMessage(message) {
-	        if (!this.isConnected) {
-	            throw new Error("It's not possible to use postMessage() before the NodeProvider is connected. Call the connect() method first.");
-	        }
-	        ethereum
-	            .send("counterfactual:nodeProvider:request", [message])
-	            .then(({ result }) => {
-	            this.eventEmitter.emit("message", result);
-	        });
-	        this.log("sendMessage", "Message has been posted via messagePort", JSON.stringify(message));
-	    }
-	    async connect() {
-	        if (this.isConnected) {
-	            console.warn("NodeProvider is already connected.");
-	            return Promise.resolve(this);
-	        }
-	        this.startEthereumEventListeners();
-	        this.notifyNodeProviderIsConnected();
-	        return Promise.resolve(this);
-	    }
-	    startEthereumEventListeners() {
-	        const NODE_EVENTS = [
-	            "proposeInstallVirtual",
-	            "installVirtualEvent",
-	            "getAppInstanceDetails",
-	            "getState",
-	            "takeAction",
-	            "updateStateEvent",
-	            "uninstallEvent"
-	        ];
-	        NODE_EVENTS.forEach((event) => {
-	            this.startIndividualEthereumEventListener(event);
-	        });
-	    }
-	    startIndividualEthereumEventListener(event) {
-	        ethereum
-	            .send("counterfactual:nodeProvider:event", [event])
-	            .then(({ result }) => {
-	            this.eventEmitter.emit("message", result);
-	            this.startIndividualEthereumEventListener(event);
-	        });
-	    }
-	    notifyNodeProviderIsConnected() {
 	        this.isConnected = true;
 	        this.log("notifyNodeProviderIsConnected", "Connection successful");
 	    }
@@ -582,8 +450,10 @@ this.window.cf = (function (exports, utils$1) {
 	var OutcomeType;
 	(function (OutcomeType) {
 	    OutcomeType[OutcomeType["TWO_PARTY_FIXED_OUTCOME"] = 0] = "TWO_PARTY_FIXED_OUTCOME";
-	    OutcomeType[OutcomeType["TWO_PARTY_DYNAMIC_OUTCOME"] = 1] = "TWO_PARTY_DYNAMIC_OUTCOME";
-	    OutcomeType[OutcomeType["COIN_TRANSFER"] = 2] = "COIN_TRANSFER";
+	    OutcomeType[OutcomeType["COIN_TRANSFER_DO_NOT_USE"] = 1] = "COIN_TRANSFER_DO_NOT_USE";
+	    OutcomeType[OutcomeType["FREE_BALANCE_OUTCOME_TYPE"] = 2] = "FREE_BALANCE_OUTCOME_TYPE";
+	    OutcomeType[OutcomeType["REFUND_OUTCOME_TYPE"] = 3] = "REFUND_OUTCOME_TYPE";
+	    OutcomeType[OutcomeType["SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER"] = 4] = "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER";
 	})(OutcomeType || (OutcomeType = {}));
 	var TwoPartyFixedOutcome;
 	(function (TwoPartyFixedOutcome) {
@@ -717,12 +587,12 @@ this.window.cf = (function (exports, utils$1) {
 	    }
 	    async proposeInstall(params) {
 	        const timeout = parseBigNumber(params.timeout, "timeout");
-	        const myDeposit = parseBigNumber(params.myDeposit, "myDeposit");
-	        const peerDeposit = parseBigNumber(params.peerDeposit, "peerDeposit");
+	        const initiatorDeposit = parseBigNumber(params.initiatorDeposit, "initiatorDeposit");
+	        const responderDeposit = parseBigNumber(params.responderDeposit, "responderDeposit");
 	        const response = await this.provider.callRawNodeMethod(Node.RpcMethodName.PROPOSE_INSTALL, {
 	            timeout,
-	            peerDeposit,
-	            myDeposit,
+	            responderDeposit,
+	            initiatorDeposit,
 	            proposedToIdentifier: params.proposedToIdentifier,
 	            initialState: params.initialState,
 	            appDefinition: this.appDefinition,
@@ -734,12 +604,12 @@ this.window.cf = (function (exports, utils$1) {
 	    }
 	    async proposeInstallVirtual(params) {
 	        const timeout = parseBigNumber(params.timeout, "timeout");
-	        const myDeposit = parseBigNumber(params.myDeposit, "myDeposit");
-	        const peerDeposit = parseBigNumber(params.peerDeposit, "peerDeposit");
+	        const initiatorDeposit = parseBigNumber(params.initiatorDeposit, "initiatorDeposit");
+	        const responderDeposit = parseBigNumber(params.responderDeposit, "responderDeposit");
 	        const response = await this.provider.callRawNodeMethod(Node.RpcMethodName.PROPOSE_INSTALL_VIRTUAL, {
 	            timeout,
-	            peerDeposit,
-	            myDeposit,
+	            responderDeposit,
+	            initiatorDeposit,
 	            proposedToIdentifier: params.proposedToIdentifier,
 	            initialState: params.initialState,
 	            intermediaries: params.intermediaries,
@@ -927,15 +797,22 @@ this.window.cf = (function (exports, utils$1) {
 	        this.eventEmitter = new eventemitter3();
 	        this.validEventTypes = Object.keys(AppInstanceEventType).map(key => AppInstanceEventType[key]);
 	        this.identityHash = info.identityHash;
-	        this.appDefinition = info.appDefinition;
-	        this.abiEncodings = info.abiEncodings;
-	        this.timeout = info.timeout;
-	        this.myDeposit = info.myDeposit;
-	        this.peerDeposit = info.peerDeposit;
-	        this.twoPartyOutcomeInterpreterParams =
-	            info.twoPartyOutcomeInterpreterParams;
-	        this.coinTransferInterpreterParams = info.coinTransferInterpreterParams;
-	        this.intermediaries = info.intermediaries;
+	        if (info["appInterface"] !== undefined) {
+	            this.appDefinition = info["appInterface"].addr;
+	            this.abiEncodings = {
+	                stateEncoding: info["appInterface"].stateEncoding,
+	                actionEncoding: info["appInterface"].actionEncoding
+	            };
+	            this.timeout = info["defaultTimeout"];
+	        }
+	        else {
+	            this.appDefinition = info["appDefinition"];
+	            this.abiEncodings = info["abiEncodings"];
+	            this.timeout = info["timeout"];
+	        }
+	        this.initiatorDeposit = info["initiatorDeposit"];
+	        this.responderDeposit = info["responderDeposit"];
+	        this.intermediaries = info["intermediaries"];
 	    }
 	    get isVirtual() {
 	        return !!(this.intermediaries && this.intermediaries.length !== 0);
@@ -1314,7 +1191,6 @@ this.window.cf = (function (exports, utils$1) {
 
 	exports.AppFactory = AppFactory;
 	exports.NodeProvider = NodeProvider;
-	exports.NodeProviderEthereum = NodeProviderEthereum;
 	exports.Provider = Provider;
 	exports.default = cf;
 	exports.types = types;
