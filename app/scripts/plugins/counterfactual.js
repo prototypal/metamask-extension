@@ -183,7 +183,7 @@ module.exports = class CounterfactualController {
   }
 
   relayMessageToNodeRPC (message) {
-    this.node.emit(message.type, message)
+    this.node.emit(message.methodName, message)
 
     return new Promise((resolve, _reject) => {
       function relayMessageToDapp (event) {
