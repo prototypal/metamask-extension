@@ -23,6 +23,9 @@ function createCounterfactualMiddleware (counterfactualController, metamaskContr
         case 'counterfactual:request:deposit_start':
           res.result = await counterfactualController.metamaskRequestDepositStartRPC()
           break
+        case 'counterfactual:request:deposit_confirmed':
+          res.result = await counterfactualController.metamaskRequestDepositConfirmedRPC()
+          break
         case 'counterfactual:request:deposit':
           res.result = await counterfactualController.metamaskRequestDepositRPC(req.params[0], req.params[1])
           break
@@ -45,7 +48,7 @@ function createCounterfactualMiddleware (counterfactualController, metamaskContr
           } else if (req.method.includes('nodeProvider:event')) {
             res.result = await counterfactualController.waitForNodeEvent(req.params[0])
           } else {
-            res.result = { name: 'hooray', does: 'thiswork' }
+            res.result = {name: 'hooray', does: 'thiswork'}
           }
           break
       }

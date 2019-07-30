@@ -32,9 +32,10 @@
       "vendor/counterfactual/node/firebase.js",
       "vendor/counterfactual/node/ethers.js",
       "vendor/counterfactual/node/loglevel.min.js",
+      "vendor/counterfactual/node/firebaseclient.iife.js",
+      "vendor/counterfactual/node/cf.js.iife.js",
       "vendor/counterfactual/node/eventemitter3.js",
       "vendor/counterfactual/node/firebase-client.iife.js",
-      "vendor/counterfactual/node/cf.js.iife.js",
       "vendor/counterfactual/node/setup.js",
       "vendor/counterfactual/node/node.iife.js",
       "background.js"

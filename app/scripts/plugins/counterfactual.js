@@ -129,18 +129,29 @@ module.exports = class CounterfactualController {
     })
   }
 
+  async metamaskRequestDepositConfirmedRPC () {
+    const NodeEventNameDepositConfirmed = 'depositConfirmedEvent'
+
+    return new Promise((resolve, _reject) => {
+      this.node.once(NodeEventNameDepositConfirmed, () => {
+        return resolve("200")
+      })
+    })
+  }
+
   async metamaskRequestDepositRPC (amount, multisigAddress) {
     try {
-      const NodeMethodNameDEPOSIT = 'deposit'
-      const result = await this.node.call(NodeMethodNameDEPOSIT, {
-        type: NodeMethodNameDEPOSIT,
-        requestId: uuid.v4(),
-        params: {
-          amount,
-          multisigAddress: multisigAddress,
-          notifyCounterparty: true,
-        },
-      })
+      const params = {
+        amount,
+        multisigAddress: multisigAddress,
+        notifyCounterparty: true,
+      }
+      const request = {
+        id: uuid.v4(),
+        methodName: "chan_deposit",
+        parameters: params,
+      }
+      const result = await this.node.rpcRouter.dispatch(request)
       return result
     } catch (e) {
       console.error(e)
@@ -175,13 +186,14 @@ module.exports = class CounterfactualController {
   }
 
   async metamaskRequestBalancesRPC (multisigAddress) {
-    const query = {
-      type: 'getFreeBalanceState',
-      requestId: uuid.v4(),
-      params: { multisigAddress },
+    const params = { multisigAddress }
+    const request = {
+      id: uuid.v4(),
+      methodName: "chan_getFreeBalanceState",
+      parameters: params,
     }
-    const response = await this.node.call(query.type, query)
-    return response.result
+    const response = await this.node.rpcRouter.dispatch(request)
+    return response.result.result
   }
 
   metamaskGetNodeAddressRPC () {
@@ -189,7 +201,7 @@ module.exports = class CounterfactualController {
   }
 
   relayMessageToNodeRPC (message) {
-    this.node.emit(message.type, message)
+    this.node.emit(message.methodName, message)
 
     return new Promise((resolve, _reject) => {
       function relayMessageToDapp (event) {
@@ -236,7 +248,9 @@ module.exports = class CounterfactualController {
 
   async playgroundRequestUserRPC () {
     const userToken = this.getUserToken()
-    if (!userToken) return {}
+    if (!userToken) {
+      return {};
+    }
     const response = await fetch(`${BASE_URL}/api/users/me`, {
       method: 'GET',
       headers: {
@@ -245,13 +259,10 @@ module.exports = class CounterfactualController {
     })
     const data = await response.json()
     const userData = data.data[0]
-    const account = {
-      balance: '0.2',
-      user: Object.assign({
+    const account = Object.assign({
         id: userData.id,
         token: userToken,
-      }, userData.attributes),
-    }
+      }, userData.attributes)
     return account
   }
 

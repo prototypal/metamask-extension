@@ -450,8 +450,10 @@ this.window.cf = (function (exports, utils$1) {
 	var OutcomeType;
 	(function (OutcomeType) {
 	    OutcomeType[OutcomeType["TWO_PARTY_FIXED_OUTCOME"] = 0] = "TWO_PARTY_FIXED_OUTCOME";
-	    OutcomeType[OutcomeType["TWO_PARTY_DYNAMIC_OUTCOME"] = 1] = "TWO_PARTY_DYNAMIC_OUTCOME";
-	    OutcomeType[OutcomeType["COIN_TRANSFER"] = 2] = "COIN_TRANSFER";
+	    OutcomeType[OutcomeType["COIN_TRANSFER_DO_NOT_USE"] = 1] = "COIN_TRANSFER_DO_NOT_USE";
+	    OutcomeType[OutcomeType["FREE_BALANCE_OUTCOME_TYPE"] = 2] = "FREE_BALANCE_OUTCOME_TYPE";
+	    OutcomeType[OutcomeType["REFUND_OUTCOME_TYPE"] = 3] = "REFUND_OUTCOME_TYPE";
+	    OutcomeType[OutcomeType["SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER"] = 4] = "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER";
 	})(OutcomeType || (OutcomeType = {}));
 	var TwoPartyFixedOutcome;
 	(function (TwoPartyFixedOutcome) {
@@ -619,6 +621,50 @@ this.window.cf = (function (exports, utils$1) {
 	        return appInstanceId;
 	    }
 	}
+	class AppFactory {
+	    constructor(appDefinition, encodings, provider) {
+	        this.appDefinition = appDefinition;
+	        this.encodings = encodings;
+	        this.provider = provider;
+	    }
+	    async proposeInstall(params) {
+	        const timeout = parseBigNumber(params.timeout, "timeout");
+	        const initiatorDeposit = parseBigNumber(params.initiatorDeposit, "initiatorDeposit");
+	        const responderDeposit = parseBigNumber(params.responderDeposit, "responderDeposit");
+	        const response = await this.provider.callRawNodeMethod(Node.RpcMethodName.PROPOSE_INSTALL, {
+	            timeout,
+	            responderDeposit,
+	            initiatorDeposit,
+	            proposedToIdentifier: params.proposedToIdentifier,
+	            initialState: params.initialState,
+	            appDefinition: this.appDefinition,
+	            abiEncodings: this.encodings,
+	            outcomeType: params.outcomeType
+	        });
+	        const { appInstanceId } = response.result;
+	        return appInstanceId;
+	    }
+	    async proposeInstallVirtual(params) {
+	        const timeout = parseBigNumber(params.timeout, "timeout");
+	        const initiatorDeposit = parseBigNumber(params.initiatorDeposit, "initiatorDeposit");
+	        const responderDeposit = parseBigNumber(params.responderDeposit, "responderDeposit");
+	        const response = await this.provider.callRawNodeMethod(Node.RpcMethodName.PROPOSE_INSTALL_VIRTUAL, {
+	            timeout,
+	            responderDeposit,
+	            initiatorDeposit,
+	            proposedToIdentifier: params.proposedToIdentifier,
+	            initialState: params.initialState,
+	            intermediaries: params.intermediaries,
+	            appDefinition: this.appDefinition,
+	            abiEncodings: this.encodings,
+	            outcomeType: OutcomeType.TWO_PARTY_FIXED_OUTCOME
+	        });
+	        const { appInstanceId } = response.result;
+	        return appInstanceId;
+	    }
+	}
+	Controller.rpcMethods = {};
+	exports.default = Controller;
 
 	var controller = createCommonjsModule(function (module, exports) {
 	Object.defineProperty(exports, "__esModule", { value: true });
@@ -672,6 +718,456 @@ this.window.cf = (function (exports, utils$1) {
 	                ...target.rpcMethods[key],
 	                method: originalMapping.method.replace("[type]", target.jsonapiType)
 	            };
+	        });
+	        // Map new functions.
+	        functions
+	            .filter(func => !Object.values(target.rpcMethods).find(method => method.callback === func))
+	            .forEach(method => {
+	            jsonApiOperation(method, target)(target.prototype, method);
+	        });
+	    };
+	}
+	exports.jsonApiType = jsonApiType;
+	function jsonApiOperation(name, forcedConstructor) {
+	    return (target, propertyKey) => {
+	        const constructor = forcedConstructor || target.constructor;
+	        const key = `${target.constructor.name}:${name}`;
+	        constructor.rpcMethods[key] = {
+	            method: `${constructor.jsonapiType || "[type]"}:${name}`,
+	            callback: propertyKey,
+	            type: constructor
+	        };
+	    };
+	}
+	exports.jsonApiOperation = jsonApiOperation;
+	function jsonApiDeserialize(payload) {
+	    return {
+	        methodName: `${payload.ref.type}:${payload.op}`,
+	        parameters: payload
+	    };
+	}
+	exports.jsonApiDeserialize = jsonApiDeserialize;
+
+	});
+
+	unwrapExports(jsonapi);
+	var jsonapi_1 = jsonapi.jsonApiType;
+	var jsonapi_2 = jsonapi.jsonApiOperation;
+	var jsonapi_3 = jsonapi.jsonApiDeserialize;
+
+	var jsonrpc = createCommonjsModule(function (module, exports) {
+	Object.defineProperty(exports, "__esModule", { value: true });
+	function jsonRpcMethod(name) {
+	    return (target, propertyKey) => {
+	        const constructor = target.constructor;
+	        constructor.rpcMethods[`${constructor.name}:${name}`] = {
+	            method: name,
+	            callback: propertyKey,
+	            type: constructor
+	        };
+	    };
+	}
+	exports.jsonRpcMethod = jsonRpcMethod;
+	function jsonRpcDeserialize(payload) {
+	    return {
+	        methodName: payload.method,
+	        parameters: payload.params,
+	        id: payload.id
+	    };
+	}
+	exports.jsonRpcDeserialize = jsonRpcDeserialize;
+	function jsonRpcSerializeAsResponse(result, id) {
+	    return {
+	        jsonrpc: "2.0",
+	        result,
+	        id
+	    };
+	}
+	exports.jsonRpcSerializeAsResponse = jsonRpcSerializeAsResponse;
+	function jsonRpcSerializeAsNotification(result) {
+	    return {
+	        jsonrpc: "2.0",
+	        result
+	    };
+	}
+	exports.jsonRpcSerializeAsNotification = jsonRpcSerializeAsNotification;
+
+	});
+
+	unwrapExports(jsonrpc);
+	var jsonrpc_1 = jsonrpc.jsonRpcMethod;
+	var jsonrpc_2 = jsonrpc.jsonRpcDeserialize;
+	var jsonrpc_3 = jsonrpc.jsonRpcSerializeAsResponse;
+	var jsonrpc_4 = jsonrpc.jsonRpcSerializeAsNotification;
+
+	var dist = createCommonjsModule(function (module, exports) {
+	Object.defineProperty(exports, "__esModule", { value: true });
+
+	exports.Controller = controller.default;
+
+	exports.Router = router.default;
+
+	exports.jsonApiType = jsonapi.jsonApiType;
+	exports.jsonApiOperation = jsonapi.jsonApiOperation;
+	exports.jsonApiDeserialize = jsonapi.jsonApiDeserialize;
+
+	exports.jsonRpcDeserialize = jsonrpc.jsonRpcDeserialize;
+	exports.jsonRpcMethod = jsonrpc.jsonRpcMethod;
+	exports.jsonRpcSerializeAsNotification = jsonrpc.jsonRpcSerializeAsNotification;
+	exports.jsonRpcSerializeAsResponse = jsonrpc.jsonRpcSerializeAsResponse;
+
+	});
+
+	unwrapExports(dist);
+	var dist_1 = dist.Controller;
+	var dist_2 = dist.Router;
+	var dist_3 = dist.jsonApiType;
+	var dist_4 = dist.jsonApiOperation;
+	var dist_5 = dist.jsonApiDeserialize;
+	var dist_6 = dist.jsonRpcDeserialize;
+	var dist_7 = dist.jsonRpcMethod;
+	var dist_8 = dist.jsonRpcSerializeAsNotification;
+	var dist_9 = dist.jsonRpcSerializeAsResponse;
+
+	var AppInstanceEventType;
+	(function (AppInstanceEventType) {
+	    AppInstanceEventType["UPDATE_STATE"] = "updateState";
+	    AppInstanceEventType["UNINSTALL"] = "uninstall";
+	    AppInstanceEventType["ERROR"] = "error";
+	})(AppInstanceEventType || (AppInstanceEventType = {}));
+	class AppInstance {
+	    constructor(info, provider) {
+	        this.provider = provider;
+	        this.eventEmitter = new eventemitter3();
+	        this.validEventTypes = Object.keys(AppInstanceEventType).map(key => AppInstanceEventType[key]);
+	        this.identityHash = info.identityHash;
+	        if (info["appInterface"] !== undefined) {
+	            this.appDefinition = info["appInterface"].addr;
+	            this.abiEncodings = {
+	                stateEncoding: info["appInterface"].stateEncoding,
+	                actionEncoding: info["appInterface"].actionEncoding
+	            };
+	            this.timeout = info["defaultTimeout"];
+	        }
+	        else {
+	            this.appDefinition = info["appDefinition"];
+	            this.abiEncodings = info["abiEncodings"];
+	            this.timeout = info["timeout"];
+	        }
+	        this.initiatorDeposit = info["initiatorDeposit"];
+	        this.responderDeposit = info["responderDeposit"];
+	        this.intermediaries = info["intermediaries"];
+	    }
+	    get isVirtual() {
+	        return !!(this.intermediaries && this.intermediaries.length !== 0);
+	    }
+	    async getState() {
+	        const response = await this.provider.callRawNodeMethod(Node.RpcMethodName.GET_STATE, {
+	            appInstanceId: this.identityHash
+	        });
+	        const result = response.result;
+	        return result.state;
+	    }
+	    async takeAction(action) {
+	        const response = await this.provider.callRawNodeMethod(Node.RpcMethodName.TAKE_ACTION, {
+	            action,
+	            appInstanceId: this.identityHash
+	        });
+	        const result = response.result;
+	        return result.newState;
+	    }
+	    async uninstall() {
+	        const intermediaryIdentifier = this.intermediaries
+	            ? this.intermediaries[0]
+	            : undefined;
+	        await this.provider.callRawNodeMethod(intermediaryIdentifier
+	            ? Node.RpcMethodName.UNINSTALL_VIRTUAL
+	            : Node.RpcMethodName.UNINSTALL, {
+	            intermediaryIdentifier,
+	            appInstanceId: this.identityHash
+	        });
+	    }
+	    on(eventType, callback) {
+	        this.validateEventType(eventType);
+	        this.eventEmitter.on(eventType, callback);
+	    }
+	    once(eventType, callback) {
+	        this.validateEventType(eventType);
+	        this.eventEmitter.once(eventType, callback);
+	    }
+	    off(eventType, callback) {
+	        this.validateEventType(eventType);
+	        this.eventEmitter.off(eventType, callback);
+	    }
+	    async dispatch(rpc) {
+	        const controller$1 = Object.values(controller.default.rpcMethods).find(mapping => mapping.method === rpc.methodName);
+	        if (!controller$1) {
+	            console.warn(`Cannot execute ${rpc.methodName}: no controller`);
+	            return;
+	        }
+	        return new controller$1.type()[controller$1.callback](rpc.parameters);
+	    }
+	}
+	exports.default = Router;
+
+	const jsonRpcMethodNames = {
+	    [Node.MethodName.GET_APP_INSTANCE_DETAILS]: "chan_getAppInstance",
+	    [Node.MethodName.GET_APP_INSTANCES]: "chan_getAppInstances",
+	    [Node.MethodName.GET_PROPOSED_APP_INSTANCES]: "chan_getProposedAppInstances",
+	    [Node.MethodName.GET_STATE]: "chan_getState",
+	    [Node.MethodName.INSTALL]: "chan_install",
+	    [Node.MethodName.INSTALL_VIRTUAL]: "chan_installVirtual",
+	    [Node.MethodName.PROPOSE_INSTALL]: "chan_proposeInstall",
+	    [Node.MethodName.PROPOSE_INSTALL_VIRTUAL]: "chan_proposeInstallVirtual",
+	    [Node.MethodName.REJECT_INSTALL]: "chan_rejectInstall",
+	    [Node.MethodName.TAKE_ACTION]: "chan_takeAction",
+	    [Node.MethodName.UNINSTALL]: "chan_uninstall",
+	    [Node.MethodName.UNINSTALL_VIRTUAL]: "uninstallVirtual"
+	};
+	const NODE_REQUEST_TIMEOUT = 20000;
+	class Provider {
+	    constructor(nodeProvider) {
+	        this.nodeProvider = nodeProvider;
+	        this.requestListeners = {};
+	        this.eventEmitter = new eventemitter3();
+	        this.appInstances = {};
+	        this.nodeProvider.onMessage(this.onNodeMessage.bind(this));
+	        this.setupAppInstanceEventListeners();
+	    }
+	    async getAppInstances() {
+	        const response = await this.callRawNodeMethod(Node.RpcMethodName.GET_APP_INSTANCES, {});
+	        const result = response.result;
+	        return Promise.all(result.appInstances.map(info => this.getOrCreateAppInstance(info.identityHash, info)));
+	    }
+	    async install(appInstanceId) {
+	        const response = await this.callRawNodeMethod(Node.RpcMethodName.INSTALL, {
+	            appInstanceId
+	        });
+	        const { appInstance } = response.result;
+	        return this.getOrCreateAppInstance(appInstanceId, appInstance);
+	    }
+	    async installVirtual(appInstanceId, intermediaries) {
+	        const response = await this.callRawNodeMethod(Node.RpcMethodName.INSTALL_VIRTUAL, {
+	            appInstanceId,
+	            intermediaries
+	        });
+	        const { appInstance } = response.result;
+	        return this.getOrCreateAppInstance(appInstanceId, appInstance);
+	    }
+	    async rejectInstall(appInstanceId) {
+	        await this.callRawNodeMethod(Node.RpcMethodName.REJECT_INSTALL, {
+	            appInstanceId
+	        });
+	    }
+	    on(eventType, callback) {
+	        this.validateEventType(eventType);
+	        this.eventEmitter.on(eventType, callback);
+	    }
+	    once(eventType, callback) {
+	        this.validateEventType(eventType);
+	        this.eventEmitter.once(eventType, callback);
+	    }
+	    off(eventType, callback) {
+	        this.validateEventType(eventType);
+	        this.eventEmitter.off(eventType, callback);
+	    }
+	    async callRawNodeMethod(methodName, params) {
+	        const requestId = new Date().valueOf();
+	        return new Promise((resolve, reject) => {
+	            const request = dist_6({
+	                params,
+	                jsonrpc: "2.0",
+	                method: methodName,
+	                id: requestId
+	            });
+	            if (!request.methodName) {
+	                return this.handleNodeError({
+	                    jsonrpc: "2.0",
+	                    result: {
+	                        type: EventType.ERROR,
+	                        data: {
+	                            errorName: "unexpected_event_type"
+	                        }
+	                    },
+	                    id: requestId
+	                });
+	            }
+	            this.requestListeners[requestId] = response => {
+	                if (response.result.type === Node.ErrorType.ERROR) {
+	                    return reject(dist_9(Object.assign({}, response.result, { type: EventType.ERROR }), requestId));
+	                }
+	                if (response.result.type !== methodName) {
+	                    return reject(dist_9({
+	                        type: EventType.ERROR,
+	                        data: {
+	                            errorName: "unexpected_message_type",
+	                            message: `Unexpected response type. Expected ${methodName}, got ${response.result.type}`
+	                        }
+	                    }, requestId));
+	                }
+	                resolve(response.result);
+	            };
+	            setTimeout(() => {
+	                if (this.requestListeners[requestId] !== undefined) {
+	                    reject({
+	                        type: EventType.ERROR,
+	                        data: {
+	                            errorName: "request_timeout",
+	                            message: `Request timed out: ${JSON.stringify(request)}`
+	                        }
+	                    });
+	                    delete this.requestListeners[requestId];
+	                }
+	            }, NODE_REQUEST_TIMEOUT);
+	            this.nodeProvider.sendMessage(request);
+	        });
+	    }
+	    async getOrCreateAppInstance(id, info) {
+	        if (!(id in this.appInstances)) {
+	            let newInfo;
+	            if (info) {
+	                newInfo = info;
+	            }
+	            else {
+	                const { result } = await this.callRawNodeMethod(Node.RpcMethodName.GET_APP_INSTANCE_DETAILS, { appInstanceId: id });
+	                newInfo = result.appInstance;
+	            }
+	            this.appInstances[id] = new AppInstance(newInfo, this);
+	        }
+	        return this.appInstances[id];
+	    }
+	    validateEventType(eventType) {
+	    }
+	    onNodeMessage(message) {
+	        const type = message["jsonrpc"]
+	            ? message.result.type
+	            : message.type;
+	        if (Object.values(Node.ErrorType).indexOf(type) !== -1) {
+	            this.handleNodeError(message);
+	        }
+	        else if ("id" in message) {
+	            this.handleNodeMethodResponse(message);
+	        }
+	        else {
+	            this.handleNodeEvent(message);
+	        }
+	    }
+	    handleNodeError(error) {
+	        const requestId = error.id;
+	        if (requestId && this.requestListeners[requestId]) {
+	            this.requestListeners[requestId](error);
+	            delete this.requestListeners[requestId];
+	        }
+	        this.eventEmitter.emit(error.result.type, error.result);
+	    }
+	    handleNodeMethodResponse(response) {
+	        const { id } = response;
+	        if (id in this.requestListeners) {
+	            this.requestListeners[id](response);
+	            delete this.requestListeners[id];
+	        }
+	        else {
+	            const error = dist_9({
+	                type: EventType.ERROR,
+	                data: {
+	                    errorName: "orphaned_response",
+	                    message: `Response has no corresponding inflight request: ${JSON.stringify(response)}`
+	                }
+	            }, Number(id));
+	            this.eventEmitter.emit(error.result.type, error.result);
+	        }
+	    }
+	    async handleNodeEvent(event) {
+	        const nodeEvent = event["jsonrpc"]
+	            ? event.result
+	            : event;
+	        switch (nodeEvent.type) {
+	            case Node.EventName.REJECT_INSTALL:
+	                return this.handleRejectInstallEvent(nodeEvent);
+	            case Node.EventName.UPDATE_STATE:
+	                return this.handleUpdateStateEvent(nodeEvent);
+	            case Node.EventName.UNINSTALL:
+	                return this.handleUninstallEvent(nodeEvent);
+	            case Node.EventName.INSTALL:
+	                return this.handleInstallEvent(nodeEvent);
+	            case Node.EventName.INSTALL_VIRTUAL:
+	                return this.handleInstallVirtualEvent(nodeEvent);
+	            default:
+	                return this.handleUnexpectedEvent(nodeEvent);
+	        }
+	    }
+	    handleUnexpectedEvent(nodeEvent) {
+	        const event = {
+	            type: EventType.ERROR,
+	            data: {
+	                errorName: "unexpected_event_type",
+	                message: `Unexpected event type: ${nodeEvent.type}: ${JSON.stringify(nodeEvent)}`
+	            }
+	        };
+	        return this.eventEmitter.emit(event.type, event);
+	    }
+	    async handleInstallEvent(nodeEvent) {
+	        const { appInstanceId } = nodeEvent.data;
+	        const appInstance = await this.getOrCreateAppInstance(appInstanceId);
+	        const event = {
+	            type: EventType.INSTALL,
+	            data: {
+	                appInstance
+	            }
+	        };
+	        return this.eventEmitter.emit(event.type, event);
+	    }
+	    async handleInstallVirtualEvent(nodeEvent) {
+	        const { appInstanceId } = nodeEvent.data["params"];
+	        const appInstance = await this.getOrCreateAppInstance(appInstanceId);
+	        const event = {
+	            type: EventType.INSTALL_VIRTUAL,
+	            data: {
+	                appInstance
+	            }
+	        };
+	        return this.eventEmitter.emit(event.type, event);
+	    }
+	    async handleUninstallEvent(nodeEvent) {
+	        const { appInstanceId } = nodeEvent.data;
+	        const appInstance = await this.getOrCreateAppInstance(appInstanceId);
+	        const event = {
+	            type: EventType.UNINSTALL,
+	            data: {
+	                appInstance
+	            }
+	        };
+	        return this.eventEmitter.emit(event.type, event);
+	    }
+	    async handleUpdateStateEvent(nodeEvent) {
+	        const { appInstanceId, action, newState } = nodeEvent.data;
+	        const appInstance = await this.getOrCreateAppInstance(appInstanceId);
+	        const event = {
+	            type: EventType.UPDATE_STATE,
+	            data: {
+	                appInstance,
+	                newState,
+	                action
+	            }
+	        };
+	        return this.eventEmitter.emit(event.type, event);
+	    }
+	    async handleRejectInstallEvent(nodeEvent) {
+	        const data = nodeEvent.data;
+	        const info = data.appInstance;
+	        const appInstance = await this.getOrCreateAppInstance(info.identityHash, info);
+	        const event = {
+	            type: EventType.REJECT_INSTALL,
+	            data: {
+	                appInstance
+	            }
+	        };
+	        return this.eventEmitter.emit(event.type, event);
+	    }
+	    setupAppInstanceEventListeners() {
+	        this.on(EventType.UPDATE_STATE, event => {
+	            const { appInstance } = event.data;
+	            appInstance.emit(AppInstanceEventType.UPDATE_STATE, event);
 	        });
 	        // Map new functions.
 	        functions
