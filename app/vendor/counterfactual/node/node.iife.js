@@ -163,7 +163,7 @@
             this.coinTransferInterpreterParams = coinTransferInterpreterParams;
         }
         static fromJson(json) {
-            const serialized = JSON.parse(JSON.stringify(json), (key, val) => val["_hex"] ? utils.bigNumberify(val) : val);
+            const serialized = JSON.parse(JSON.stringify(json), (key, val) => (val["_hex"] ? utils.bigNumberify(val) : val));
             return new AppInstance(serialized.multisigAddress, serialized.participants, serialized.defaultTimeout, serialized.appInterface, serialized.isVirtualApp, serialized.appSeqNo, serialized.latestState, serialized.latestVersionNumber, serialized.latestTimeout, serialized.outcomeType, serialized.twoPartyOutcomeInterpreterParams, serialized.coinTransferInterpreterParams);
         }
         toJson() {
@@ -181,7 +181,7 @@
                 twoPartyOutcomeInterpreterParams: this.twoPartyOutcomeInterpreterParams,
                 coinTransferInterpreterParams: this.coinTransferInterpreterParams,
                 identityHash: this.identityHash
-            }), (key, val) => utils.BigNumber.isBigNumber(val) ? { _hex: val.toHexString() } : val);
+            }), (key, val) => (utils.BigNumber.isBigNumber(val) ? { _hex: val.toHexString() } : val));
         }
         get identityHash() {
             return appIdentityToHash(this.identity);
@@ -503,7 +503,7 @@
         "ProxyFactory",
         "TimeLockedPassThrough",
         "TwoPartyFixedOutcomeInterpreter",
-        "TwoPartyFixedOutcomeFromVirtualAppETHInterpreter"
+        "TwoPartyFixedOutcomeFromVirtualAppInterpreter"
     ];
 
     const HARD_CODED_ASSUMPTIONS = {
@@ -1419,7 +1419,7 @@
     address tokenAddress
   )
 `;
-    const encodeTwoPartyFixedOutcomeFromVirtualAppETHInterpreterParams = params => utils.defaultAbiCoder.encode([SINGLE_ASSET_TWO_PARTY_INTERMEDIARY_AGREEMENT_ENCODING], [params]);
+    const encodeTwoPartyFixedOutcomeFromVirtualAppInterpreterParams = params => utils.defaultAbiCoder.encode([SINGLE_ASSET_TWO_PARTY_INTERMEDIARY_AGREEMENT_ENCODING], [params]);
     const protocol = Protocol.InstallVirtualApp;
     const { OP_SIGN, WRITE_COMMITMENT, IO_SEND, IO_SEND_AND_WAIT } = Opcode;
     const INSTALL_VIRTUAL_APP_PROTOCOL = {
@@ -1430,7 +1430,7 @@
                 const [stateChannelWithInitiatingAndIntermediary, stateChannelWithResponding, stateChannelWithIntermediary, virtualAppInstance, timeLockedPassThroughAppInstance] = yield __await(getUpdatedStateChannelAndVirtualAppObjectsForInitiating(params, stateChannelsMap, network, provider));
                 const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(intermediaryXpub);
                 const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(responderXpub);
-                const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(network, stateChannelWithIntermediary.multisigAddress, stateChannelWithIntermediary.multisigOwners, timeLockedPassThroughAppInstance.identityHash, stateChannelWithIntermediary.freeBalance.identityHash, network.TwoPartyFixedOutcomeFromVirtualAppETHInterpreter, encodeTwoPartyFixedOutcomeFromVirtualAppETHInterpreterParams(stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(virtualAppInstance.identityHash)));
+                const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(network, stateChannelWithIntermediary.multisigAddress, stateChannelWithIntermediary.multisigOwners, timeLockedPassThroughAppInstance.identityHash, stateChannelWithIntermediary.freeBalance.identityHash, network.TwoPartyFixedOutcomeFromVirtualAppInterpreter, encodeTwoPartyFixedOutcomeFromVirtualAppInterpreterParams(stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(virtualAppInstance.identityHash)));
                 const initiatorSignatureOnAliceIngridVirtualAppAgreement = yield yield __await([
                     OP_SIGN,
                     presignedMultisigTxForAliceIngridVirtualAppAgreement
@@ -1522,15 +1522,15 @@
         },
         1: function (context) {
             return __asyncGenerator(this, arguments, function* () {
-                const { message: m1, stateChannelsMap, network, provider } = context;
+                const { message: m1, stateChannelsMap, network } = context;
                 const { params, protocolExecutionID, signature: initiatorSignatureOnAliceIngridVirtualAppAgreement, signature2: virtualAppInstanceIdentityHash, signature3: virtualAppInstanceDefaultOutcome } = m1;
                 const { initiatorXpub, responderXpub } = params;
                 const [stateChannelBetweenVirtualAppUsers, stateChannelWithInitiating, stateChannelWithResponding, timeLockedPassThroughAppInstance] = yield __await(getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(params, stateChannelsMap, virtualAppInstanceIdentityHash, virtualAppInstanceDefaultOutcome, network));
                 const initiatorAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(initiatorXpub);
                 const responderAddress = stateChannelWithResponding.getMultisigOwnerAddrOf(responderXpub);
-                const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(network, stateChannelWithInitiating.multisigAddress, stateChannelWithInitiating.multisigOwners, timeLockedPassThroughAppInstance.identityHash, stateChannelWithInitiating.freeBalance.identityHash, network.TwoPartyFixedOutcomeFromVirtualAppETHInterpreter, encodeTwoPartyFixedOutcomeFromVirtualAppETHInterpreterParams(stateChannelWithInitiating.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(timeLockedPassThroughAppInstance.state["targetAppIdentityHash"])));
+                const presignedMultisigTxForAliceIngridVirtualAppAgreement = new ConditionalTransaction(network, stateChannelWithInitiating.multisigAddress, stateChannelWithInitiating.multisigOwners, timeLockedPassThroughAppInstance.identityHash, stateChannelWithInitiating.freeBalance.identityHash, network.TwoPartyFixedOutcomeFromVirtualAppInterpreter, encodeTwoPartyFixedOutcomeFromVirtualAppInterpreterParams(stateChannelWithInitiating.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(timeLockedPassThroughAppInstance.state["targetAppIdentityHash"])));
                 assertIsValidSignature(initiatorAddress, presignedMultisigTxForAliceIngridVirtualAppAgreement, initiatorSignatureOnAliceIngridVirtualAppAgreement);
-                const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(network, stateChannelWithResponding.multisigAddress, stateChannelWithResponding.multisigOwners, timeLockedPassThroughAppInstance.identityHash, stateChannelWithResponding.freeBalance.identityHash, network.TwoPartyFixedOutcomeFromVirtualAppETHInterpreter, encodeTwoPartyFixedOutcomeFromVirtualAppETHInterpreterParams(stateChannelWithResponding.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(timeLockedPassThroughAppInstance.state["targetAppIdentityHash"])));
+                const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(network, stateChannelWithResponding.multisigAddress, stateChannelWithResponding.multisigOwners, timeLockedPassThroughAppInstance.identityHash, stateChannelWithResponding.freeBalance.identityHash, network.TwoPartyFixedOutcomeFromVirtualAppInterpreter, encodeTwoPartyFixedOutcomeFromVirtualAppInterpreterParams(stateChannelWithResponding.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(timeLockedPassThroughAppInstance.state["targetAppIdentityHash"])));
                 const intermediarySignatureOnIngridBobVirtualAppAgreement = yield yield __await([
                     OP_SIGN,
                     presignedMultisigTxForIngridBobVirtualAppAgreement
@@ -1651,7 +1651,7 @@
                 const [stateChannelWithRespondingAndIntermediary, stateChannelWithInitiating, stateChannelWithIntermediary, virtualAppInstance, timeLockedPassThroughAppInstance] = yield __await(getUpdatedStateChannelAndVirtualAppObjectsForResponding(params, stateChannelsMap, network, provider));
                 const intermediaryAddress = stateChannelWithIntermediary.getMultisigOwnerAddrOf(intermediaryXpub);
                 const initiatorAddress = stateChannelWithInitiating.getMultisigOwnerAddrOf(initiatorXpub);
-                const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(network, stateChannelWithIntermediary.multisigAddress, stateChannelWithIntermediary.multisigOwners, timeLockedPassThroughAppInstance.identityHash, stateChannelWithIntermediary.freeBalance.identityHash, network.TwoPartyFixedOutcomeFromVirtualAppETHInterpreter, encodeTwoPartyFixedOutcomeFromVirtualAppETHInterpreterParams(stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(virtualAppInstance.identityHash)));
+                const presignedMultisigTxForIngridBobVirtualAppAgreement = new ConditionalTransaction(network, stateChannelWithIntermediary.multisigAddress, stateChannelWithIntermediary.multisigOwners, timeLockedPassThroughAppInstance.identityHash, stateChannelWithIntermediary.freeBalance.identityHash, network.TwoPartyFixedOutcomeFromVirtualAppInterpreter, encodeTwoPartyFixedOutcomeFromVirtualAppInterpreterParams(stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(virtualAppInstance.identityHash)));
                 assertIsValidSignature(intermediaryAddress, presignedMultisigTxForIngridBobVirtualAppAgreement, intermediarySignatureOnIngridBobVirtualAppAgreement);
                 const responderSignatureOnIngridBobVirtualAppAgreement = yield yield __await([
                     OP_SIGN,
@@ -1745,7 +1745,7 @@
         const responderAddress = xkeyKthAddress(responderXpub, seqNo);
         return new AppInstance(stateChannelBetweenEndpoints.multisigAddress, sortAddresses([initiatorAddress, responderAddress]), defaultTimeout, appInterface, true, seqNo, initialState, 0, defaultTimeout, OutcomeType.COIN_TRANSFER_DO_NOT_USE, undefined, undefined);
     }
-    function constructTimeLockedPassThroughAppInstance(threePartyStateChannel, virtualAppInstanceIdentityHash, virtualAppDefaultOutcome, network, params, provider) {
+    function constructTimeLockedPassThroughAppInstance(threePartyStateChannel, virtualAppInstanceIdentityHash, virtualAppDefaultOutcome, network, params) {
         const { intermediaryXpub, initiatorXpub, responderXpub, initiatorBalanceDecrement, responderBalanceDecrement, outcomeType } = params;
         const seqNo = threePartyStateChannel.numInstalledApps;
         const intermediaryAddress = xkeyKthAddress(intermediaryXpub, seqNo);
@@ -1809,7 +1809,7 @@
             timeLockedPassThroughAppInstance
         ];
     }
-    async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(params, stateChannelsMap, virtualAppInstanceIdentityHash, virtualAppInstanceDefaultOutcome, network, provider) {
+    async function getUpdatedStateChannelAndVirtualAppObjectsForIntermediary(params, stateChannelsMap, virtualAppInstanceIdentityHash, virtualAppInstanceDefaultOutcome, network) {
         const { initiatorBalanceDecrement, responderBalanceDecrement, initiatorXpub, intermediaryXpub, responderXpub, tokenAddress } = params;
         const stateChannelWithAllThreeParties = getOrCreateStateChannelWithUsers(stateChannelsMap, [initiatorXpub, responderXpub, intermediaryXpub], network);
         const timeLockedPassThroughAppInstance = await constructTimeLockedPassThroughAppInstance(stateChannelWithAllThreeParties, virtualAppInstanceIdentityHash, virtualAppInstanceDefaultOutcome, network, params);
@@ -2026,18 +2026,9 @@
         }
         return ret;
     }
-    function anyNonzeroValues(map) {
-        for (const tokenAddress of Object.keys(map)) {
-            for (const address of Object.keys(map[tokenAddress])) {
-                if (map[tokenAddress][address].gt(constants.Zero)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
+    const anyNonzeroValues = (tokenIndexedCoinTransferMap) => Object.values(tokenIndexedCoinTransferMap).some(coinTransferMap => Object.values(coinTransferMap).some(amount => amount.gt(constants.Zero)));
     const wait = (ms) => new Promise(r => setTimeout(r, ms));
-    async function computeTokenIndexedFreeBalanceIncrements(networkContext, appInstance, provider) {
+    async function computeTokenIndexedFreeBalanceIncrements(appInstance, provider) {
         const appDefinition = new ethers.Contract(appInstance.appInterface.addr, CounterfactualApp.abi, provider);
         let outcome = await appDefinition.functions.computeOutcome(appInstance.encodedLatestState);
         const outcomeType = appInstance.toJson().outcomeType;
@@ -2157,9 +2148,9 @@
     };
     async function proposeStateTransition$1(params, context, provider) {
         const { appIdentityHash, multisigAddress } = params;
-        const { network, stateChannelsMap } = context;
+        const { stateChannelsMap } = context;
         const sc = stateChannelsMap.get(multisigAddress);
-        const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(network, sc.getAppInstance(appIdentityHash), provider);
+        const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(sc.getAppInstance(appIdentityHash), provider);
         const newStateChannel = sc.uninstallApp(appIdentityHash, tokenIndexedIncrements);
         stateChannelsMap.set(multisigAddress, newStateChannel);
         const freeBalance = newStateChannel.freeBalance;
@@ -2346,7 +2337,7 @@
         const agreement = stateChannelWithIntermediary.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(targetAppIdentityHash);
         const timeLockedPassThroughAppInstance = stateChannelWithAllThreeParties.getAppInstance(agreement.timeLockedPassThroughIdentityHash);
         const virtualAppInstance = stateChannelWithResponding.getAppInstance(timeLockedPassThroughAppInstance.state["targetAppIdentityHash"]);
-        const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(network, stateChannelWithAllThreeParties.getAppInstance(timeLockedPassThroughAppInstance.identityHash), provider);
+        const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(stateChannelWithAllThreeParties.getAppInstance(timeLockedPassThroughAppInstance.identityHash), provider);
         return [
             stateChannelWithAllThreeParties.removeAppInstance(timeLockedPassThroughAppInstance.identityHash),
             stateChannelWithIntermediary.removeSingleAssetTwoPartyIntermediaryAgreement(virtualAppInstance.identityHash, {
@@ -2374,7 +2365,7 @@
         if (expectedOutcome !== targetOutcome) {
             throw new Error("UninstallVirtualApp Protocol: Received targetOutcome that did not match expected outcome based on latest state of Virtual App.");
         }
-        const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(network, stateChannelWithAllThreeParties.getAppInstance(timeLockedPassThroughAppInstance.identityHash), provider);
+        const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(stateChannelWithAllThreeParties.getAppInstance(timeLockedPassThroughAppInstance.identityHash), provider);
         return [
             stateChannelWithAllThreeParties.removeAppInstance(timeLockedPassThroughAppInstance.identityHash),
             stateChannelWithIntermediary.removeSingleAssetTwoPartyIntermediaryAgreement(virtualAppInstance.identityHash, {
@@ -2397,7 +2388,7 @@
         ];
         const agreementWithInitiating = stateChannelWithInitiating.getSingleAssetTwoPartyIntermediaryAgreementFromVirtualApp(targetAppIdentityHash);
         const timeLockedPassThroughAppInstance = stateChannelWithAllThreeParties.getAppInstance(agreementWithInitiating.timeLockedPassThroughIdentityHash);
-        const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(network, stateChannelWithAllThreeParties.getAppInstance(timeLockedPassThroughAppInstance.identityHash), provider);
+        const tokenIndexedIncrements = await computeTokenIndexedFreeBalanceIncrements(stateChannelWithAllThreeParties.getAppInstance(timeLockedPassThroughAppInstance.identityHash), provider);
         return [
             stateChannelWithAllThreeParties.removeAppInstance(timeLockedPassThroughAppInstance.identityHash),
             stateChannelWithInitiating.removeSingleAssetTwoPartyIntermediaryAgreement(timeLockedPassThroughAppInstance.state["targetAppIdentityHash"], {
@@ -3131,7 +3122,7 @@
             super(...arguments);
             this.executeMethod = super.executeMethod;
         }
-        async executeMethodImplementation(requestHandler, params) {
+        async executeMethodImplementation(requestHandler) {
             const { store } = requestHandler;
             const ret = [];
             const channels = await store.getAllChannels();
@@ -3999,6 +3990,10 @@
         }
         async enqueueByShard(requestHandler, params) {
             const { store, publicIdentifier } = requestHandler;
+            const { initialState } = params;
+            if (!initialState) {
+                throw new Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
+            }
             const { proposedToIdentifier, initiatorDeposit, responderDeposit, initiatorDepositTokenAddress: initiatorDepositTokenAddressParam, responderDepositTokenAddress: responderDepositTokenAddressParam } = params;
             const myIdentifier = publicIdentifier;
             const multisigAddress = await store.getMultisigAddressFromOwnersHash(hashOfOrderedPublicIdentifiers([myIdentifier, proposedToIdentifier]));
@@ -4016,10 +4011,7 @@
         }
         async executeMethodImplementation(requestHandler, params) {
             const { store, publicIdentifier, messagingService } = requestHandler;
-            const { initialState, proposedToIdentifier } = params;
-            if (!initialState) {
-                throw new Error(NULL_INITIAL_STATE_FOR_PROPOSAL);
-            }
+            const { proposedToIdentifier } = params;
             const appInstanceId = await createProposedAppInstance(publicIdentifier, store, params);
             const proposalMsg = {
                 from: publicIdentifier,
@@ -4344,7 +4336,7 @@
     }
 
     class GetProposedAppInstancesController extends NodeController {
-        async executeMethodImplementation(requestHandler, params) {
+        async executeMethodImplementation(requestHandler) {
             return {
                 appInstances: await requestHandler.store.getProposedAppInstances()
             };
@@ -4354,7 +4346,7 @@
     __decorate([
         dist_7("chan_getProposedAppInstances"),
         __metadata("design:type", Function),
-        __metadata("design:paramtypes", [RequestHandler, Object]),
+        __metadata("design:paramtypes", [RequestHandler]),
         __metadata("design:returntype", Promise)
     ], GetProposedAppInstancesController.prototype, "executeMethodImplementation", null);
 
@@ -4375,7 +4367,7 @@
             super(...arguments);
             this.executeMethod = super.executeMethod;
         }
-        async enqueueByShard(requestHandler, params) {
+        async enqueueByShard(requestHandler) {
             return [requestHandler.getShardedQueue(CreateChannelController.methodName)];
         }
         async executeMethodImplementation(requestHandler, params) {
@@ -4644,7 +4636,7 @@
     ], GetStateDepositHolderAddressController.prototype, "executeMethod", void 0);
 
     class GetAllChannelAddressesController extends NodeController {
-        async executeMethodImplementation(requestHandler, params) {
+        async executeMethodImplementation(requestHandler) {
             return {
                 multisigAddresses: Object.keys(await requestHandler.store.getAllChannels())
             };
@@ -4693,7 +4685,6 @@
             }
             return [requestHandler.getShardedQueue(params.multisigAddress)];
         }
-        async beforeExecution(requestHandler, params) { }
         async executeMethodImplementation(requestHandler, params) {
             const { store, provider, wallet, publicIdentifier, blocksNeededForConfirmation, outgoing } = requestHandler;
             const { multisigAddress, amount, recipient } = params;
@@ -4745,12 +4736,17 @@
             if (!controller) {
                 throw new Error(`Cannot execute ${rpc.methodName}: no controller`);
             }
-            const result = dist_9({
-                result: await new controller.type()[controller.callback](this.requestHandler, rpc.parameters),
-                type: rpc.methodName
-            }, rpc.id);
-            this.requestHandler.outgoing.emit(rpc.methodName, result);
-            return result;
+            try {
+                const result = dist_9({
+                    result: await new controller.type()[controller.callback](this.requestHandler, rpc.parameters),
+                    type: rpc.methodName
+                }, rpc.id);
+                this.requestHandler.outgoing.emit(rpc.methodName, result);
+                return result;
+            }
+            catch (e) {
+                throw new Error(e);
+            }
         }
         async subscribe(event, callback) {
             this.requestHandler.outgoing.on(event, callback);
@@ -4850,11 +4846,11 @@
         }
     }
 
-    var RopstenContracts = [{contractName:"Migrations",address:"0xA10b9d1077678E3101988457033bC3A39722085b",transactionHash:"0x0332f7d59738290d69c26650ea151278a50699a50d74a3ffc02e27466e7e6f19"},{contractName:"CoinBalanceRefundApp",address:"0x62222411971c5a919a0F48bC4ea4eb615B6C1aFd",transactionHash:"0xff2b147b8d9d83583ff9b6694da3fb31f7eee8910339b10ece218e1c3df4c911"},{contractName:"CoinTransferInterpreter",address:"0x78D4A2c50b2EE6a99cE65b670Ec0BC6aa1BdD6B6",transactionHash:"0x0ccfc304d35cb5e3d770f88c4e3de4270599667426851c5b254bd96e383065bd"},{contractName:"ConditionalTransactionDelegateTarget",address:"0x99f56452E12644FB08c7151901697e02724aee42",transactionHash:"0x7dfdb12becd4175e3f3d002c3c9ff45e23530c18cfe10c41b8a09676b29d823a"},{contractName:"FreeBalanceApp",address:"0xCccd27Ef44787cBd7431BeA980503f15F92c4792",transactionHash:"0x840fb904797b7b2bb8f9efc56db66e7ec633925cba5bdddb79f1e61a67d422c6"},{contractName:"IdentityApp",address:"0x56f954c65330F46D2A736892F8c4484052A7eC61",transactionHash:"0x31beb87b0be9fb294cfce3404e46c4db26d96a80a0727e159def1e12de518323"},{contractName:"MinimumViableMultisig",address:"0xCCF3038Eb5d8c094420dAeA9BF9ee590aCd07A83",transactionHash:"0x313538f3350e91c4fb8c577523f6b7a4f86c02b95b58d39e783065bb0f86b7e7"},{contractName:"ProxyFactory",address:"0x00574729Bf25bC613ecE1D55472A8dc1f3dC0fB6",transactionHash:"0xe5f3331676b36c0bf327e28a1ee0a6525be617f48b37481360c453e1fad318c6"},{contractName:"TimeLockedPassThrough",address:"0xDBF1cBDE68Ce2D784Ea9c91801bb425543Cc219f",transactionHash:"0x5cccb5a68828ec2d394a7c9a4a71d1d99d680d501cedc2d06df73f3c4be0a32d"},{contractName:"TwoPartyFixedOutcomeFromVirtualAppETHInterpreter",address:"0x29ed7F1f4A863B468dE1Fe6dC33F2A08AE530f5B",transactionHash:"0x036280aa2ef9e6e7a5bb8eafb1bb8feac3fcbe74190010ba43d614d12a9ad409"},{contractName:"Migrations",address:"0xE668a1E6C205A799F964A138cA6Be63e05b47eaf",transactionHash:"0x06dbffe47396aa05bc1591babdf8a46342359d659e74c150084e978fa2a2e1e1"},{contractName:"ChallengeRegistry",address:"0x167f53654A45216ac62320646E66Be6B7887E101",transactionHash:"0xf72613601b80eea7efd6544fbf1cad692406b844cb1b25fc51289fb84c3a3414"},{contractName:"TwoPartyFixedOutcomeInterpreter",address:"0x43A9A00Ba48fFe0Fc09840FB4B1F047d71f8A546",transactionHash:"0x9908549bb3947b64b5932ad0ad488d5e3ff55bd72e769403a7b6f402317214d4"}];
+    var RopstenContracts = [{contractName:"Migrations",address:"0xA10b9d1077678E3101988457033bC3A39722085b",transactionHash:"0x0332f7d59738290d69c26650ea151278a50699a50d74a3ffc02e27466e7e6f19"},{contractName:"CoinBalanceRefundApp",address:"0x62222411971c5a919a0F48bC4ea4eb615B6C1aFd",transactionHash:"0xff2b147b8d9d83583ff9b6694da3fb31f7eee8910339b10ece218e1c3df4c911"},{contractName:"CoinTransferInterpreter",address:"0x78D4A2c50b2EE6a99cE65b670Ec0BC6aa1BdD6B6",transactionHash:"0x0ccfc304d35cb5e3d770f88c4e3de4270599667426851c5b254bd96e383065bd"},{contractName:"ConditionalTransactionDelegateTarget",address:"0x99f56452E12644FB08c7151901697e02724aee42",transactionHash:"0x7dfdb12becd4175e3f3d002c3c9ff45e23530c18cfe10c41b8a09676b29d823a"},{contractName:"FreeBalanceApp",address:"0xCccd27Ef44787cBd7431BeA980503f15F92c4792",transactionHash:"0x840fb904797b7b2bb8f9efc56db66e7ec633925cba5bdddb79f1e61a67d422c6"},{contractName:"IdentityApp",address:"0x56f954c65330F46D2A736892F8c4484052A7eC61",transactionHash:"0x31beb87b0be9fb294cfce3404e46c4db26d96a80a0727e159def1e12de518323"},{contractName:"MinimumViableMultisig",address:"0xCCF3038Eb5d8c094420dAeA9BF9ee590aCd07A83",transactionHash:"0x313538f3350e91c4fb8c577523f6b7a4f86c02b95b58d39e783065bb0f86b7e7"},{contractName:"ProxyFactory",address:"0x00574729Bf25bC613ecE1D55472A8dc1f3dC0fB6",transactionHash:"0xe5f3331676b36c0bf327e28a1ee0a6525be617f48b37481360c453e1fad318c6"},{contractName:"TimeLockedPassThrough",address:"0xDBF1cBDE68Ce2D784Ea9c91801bb425543Cc219f",transactionHash:"0x5cccb5a68828ec2d394a7c9a4a71d1d99d680d501cedc2d06df73f3c4be0a32d"},{contractName:"Migrations",address:"0xE668a1E6C205A799F964A138cA6Be63e05b47eaf",transactionHash:"0x06dbffe47396aa05bc1591babdf8a46342359d659e74c150084e978fa2a2e1e1"},{contractName:"ChallengeRegistry",address:"0x167f53654A45216ac62320646E66Be6B7887E101",transactionHash:"0xf72613601b80eea7efd6544fbf1cad692406b844cb1b25fc51289fb84c3a3414"},{contractName:"TwoPartyFixedOutcomeInterpreter",address:"0x43A9A00Ba48fFe0Fc09840FB4B1F047d71f8A546",transactionHash:"0x9908549bb3947b64b5932ad0ad488d5e3ff55bd72e769403a7b6f402317214d4"},{contractName:"TwoPartyFixedOutcomeFromVirtualAppInterpreter",address:"0xDab441a20b7C2449Fa5D8E1dd6a60662657A8a85",transactionHash:"0xed4411af2708ab89bfea1eede8c56559cc0f4a86ab4041fa3e25a6d1e3c0613c"}];
 
-    var RinkebyContracts = [{contractName:"CoinBalanceRefundApp",address:"0xA2502578c9b05e6A0B6801239BC0f98c8a6ea2E7",transactionHash:"0x47c82666deadf8897269734b330f07458770fc93ab5a86eea753f1740f9c0c47"},{contractName:"CoinTransferInterpreter",address:"0xee20aF5ff3C6040d17500cf3342022A21a9eC76d",transactionHash:"0xd58fa8f3b6e49247b4bd9dcc84d8f3a3851323beebef3cc14c3d65d1de790e34"},{contractName:"ConditionalTransactionDelegateTarget",address:"0x1cE72C1ec60aC26D04E1Ec1E7408e03e51720A00",transactionHash:"0x4452c4d0ebf356c1536a60641649d127661fd88c7ff7dc932daf8aff00364a8b"},{contractName:"FreeBalanceApp",address:"0xbB0A8b83fc09457f3AcB6e48454Cf349206ba5e7",transactionHash:"0xfd046db3bc02f6ad4d0d7980ceafd39ab39b812522c92dae897aca0db8524ec5"},{contractName:"IdentityApp",address:"0x49edCB58359218DA8C27E49d9D9ea41F9D2bC3B3",transactionHash:"0x01aba80d6a365a6e7619a64b93aa9f900796ee3db9cf2f7d1aaf273600f06f09"},{contractName:"MinimumViableMultisig",address:"0xb730A8BFbc202c9777004299b1aa13Dd0308dE7D",transactionHash:"0xb7915bf74576bb260a2370eb1a86ff4193005a23b6180fb343cc3a68f0a69ff9"},{contractName:"ProxyFactory",address:"0x8A49B435cc3D2176B67e0D26170387EeDf135669",transactionHash:"0xe0ba7ce52bda8e9333154c222b07dbd8b099c23181010352c606016cfe44f48c"},{contractName:"TimeLockedPassThrough",address:"0x7197797c0fA25B3Dc0c28C92a6154b347DC493B6",transactionHash:"0x7fe06ed378dfe656d0329bca8f160492064d024038802cb40a49822baa781a60"},{contractName:"TwoPartyFixedOutcomeFromVirtualAppETHInterpreter",address:"0xab39f5aA1Bc1cB5442268b075f535c296aAee980",transactionHash:"0x74f228bdd1a59c8ff06d203eb68793376f4a0d48147b03b6949f489cb5dabdae"},{contractName:"Migrations",address:"0xE668a1E6C205A799F964A138cA6Be63e05b47eaf",transactionHash:"0x06dbffe47396aa05bc1591babdf8a46342359d659e74c150084e978fa2a2e1e1"},{contractName:"ChallengeRegistry",address:"0x167f53654A45216ac62320646E66Be6B7887E101",transactionHash:"0xf72613601b80eea7efd6544fbf1cad692406b844cb1b25fc51289fb84c3a3414"},{contractName:"TwoPartyFixedOutcomeInterpreter",address:"0x5AC29B1D3607fcE8216cC95F9E009A61c0048e6D",transactionHash:"0xb1890209b3b60a357fc11620829325288acfcd8a2b43cc67d1558737a8f9dd13"}];
+    var RinkebyContracts = [{contractName:"CoinBalanceRefundApp",address:"0xA2502578c9b05e6A0B6801239BC0f98c8a6ea2E7",transactionHash:"0x47c82666deadf8897269734b330f07458770fc93ab5a86eea753f1740f9c0c47"},{contractName:"CoinTransferInterpreter",address:"0xee20aF5ff3C6040d17500cf3342022A21a9eC76d",transactionHash:"0xd58fa8f3b6e49247b4bd9dcc84d8f3a3851323beebef3cc14c3d65d1de790e34"},{contractName:"ConditionalTransactionDelegateTarget",address:"0x1cE72C1ec60aC26D04E1Ec1E7408e03e51720A00",transactionHash:"0x4452c4d0ebf356c1536a60641649d127661fd88c7ff7dc932daf8aff00364a8b"},{contractName:"FreeBalanceApp",address:"0xbB0A8b83fc09457f3AcB6e48454Cf349206ba5e7",transactionHash:"0xfd046db3bc02f6ad4d0d7980ceafd39ab39b812522c92dae897aca0db8524ec5"},{contractName:"IdentityApp",address:"0x49edCB58359218DA8C27E49d9D9ea41F9D2bC3B3",transactionHash:"0x01aba80d6a365a6e7619a64b93aa9f900796ee3db9cf2f7d1aaf273600f06f09"},{contractName:"MinimumViableMultisig",address:"0xb730A8BFbc202c9777004299b1aa13Dd0308dE7D",transactionHash:"0xb7915bf74576bb260a2370eb1a86ff4193005a23b6180fb343cc3a68f0a69ff9"},{contractName:"ProxyFactory",address:"0x8A49B435cc3D2176B67e0D26170387EeDf135669",transactionHash:"0xe0ba7ce52bda8e9333154c222b07dbd8b099c23181010352c606016cfe44f48c"},{contractName:"TimeLockedPassThrough",address:"0x7197797c0fA25B3Dc0c28C92a6154b347DC493B6",transactionHash:"0x7fe06ed378dfe656d0329bca8f160492064d024038802cb40a49822baa781a60"},{contractName:"Migrations",address:"0xE668a1E6C205A799F964A138cA6Be63e05b47eaf",transactionHash:"0x06dbffe47396aa05bc1591babdf8a46342359d659e74c150084e978fa2a2e1e1"},{contractName:"ChallengeRegistry",address:"0x167f53654A45216ac62320646E66Be6B7887E101",transactionHash:"0xf72613601b80eea7efd6544fbf1cad692406b844cb1b25fc51289fb84c3a3414"},{contractName:"TwoPartyFixedOutcomeInterpreter",address:"0x5AC29B1D3607fcE8216cC95F9E009A61c0048e6D",transactionHash:"0xb1890209b3b60a357fc11620829325288acfcd8a2b43cc67d1558737a8f9dd13"},{contractName:"TwoPartyFixedOutcomeFromVirtualAppInterpreter",address:"0xbe3b02162DEd206C6f2B565e19ffd5258a8AebfF",transactionHash:"0xbee64dc9b1f4f9f60a84f6dfd49c37c332168f3edc29efe6fe34813e95b2cdb9"}];
 
-    var KovanContracts = [{contractName:"CoinBalanceRefundApp",address:"0x403A258A91644B905EDDd1CD931ffcD49aC5f80D",transactionHash:"0x246be58aa85d8a9ac25610bdc5eb7166cb78707f0362d9187e8d6d7c33e80db5"},{contractName:"CoinTransferInterpreter",address:"0x01428E1ed4BFDa2B9820CD0689eC407Bc2aB1cDF",transactionHash:"0xfac913187a7707f76cc5ed7481015facd3d830c484dc5fc9c03ab3d4f260e85c"},{contractName:"ConditionalTransactionDelegateTarget",address:"0x68414D9ceD10a422343590425823320E24485B02",transactionHash:"0x5da8471f7502cce36b7a91dc6705f5a63f0444e86b103a9f4cef45ffb318c051"},{contractName:"FreeBalanceApp",address:"0x79a5eC35534717dFEC167062328C613fC9840F55",transactionHash:"0xdabf87c50e37c2e22481451582cc462e57a723340f065b060ec0a9cff2966a8a"},{contractName:"IdentityApp",address:"0x17Ca1Fe423Ec32B2A95733ef3aa6a963D616697d",transactionHash:"0x65d150e1866b643616e9fe62eb7bbad49dd5b605e537c1f3550979400f42d25e"},{contractName:"MinimumViableMultisig",address:"0x4ce2bDfF009900fae668EB74e46b237e619B951a",transactionHash:"0xd6c5ea1c0047d8f14b2fe83620c121e64cfee91808f1601352caa04e2734ca95"},{contractName:"ProxyFactory",address:"0x3780e2Af8DAf979A6F66d76551AfA7CB8311D396",transactionHash:"0xfa4850a867eaa9681884327870a11aaddbc81ad0ee1605223b4ce85ff5615011"},{contractName:"TimeLockedPassThrough",address:"0x06143c7eb8bC68CD743BEBc39fb5b5B18195C21E",transactionHash:"0xde7a76e301768399494a9f7dd319270b4e51e56ec73f88e22214a70a56ead409"},{contractName:"TwoPartyFixedOutcomeFromVirtualAppETHInterpreter",address:"0x15b7EE87083e340B1F1e3d534Ad445B5c832c25C",transactionHash:"0x00a8ab37766ad01cdd45f16f6b5fc1daf671422fe6977d7366d45e3ff0e6b728"},{contractName:"Migrations",address:"0x9a2AdA593637c7f404C3DA69Ee26e4B1E8CfC0Fd",transactionHash:"0x5b9168daa3a09730373d468cfc61dfef71b9f78130d49e2496d9b79cf1345ab9"},{contractName:"ChallengeRegistry",address:"0x100Db874AC77dc8ddad7421b6464e188A2F533D6",transactionHash:"0xbc1bb1ebe71d8ceaf6024da3b4b68e972af37b8570e7e508022dfb6a8f2ab0e3"},{contractName:"TwoPartyFixedOutcomeInterpreter",address:"0x0C8D6B0EF29f242ced6c52001aF3B15d488A2A63",transactionHash:"0x5a285892581ef45f662ac5058ed6ba4924eff50ac418822397879111bee5981e"}];
+    var KovanContracts = [{contractName:"CoinBalanceRefundApp",address:"0x403A258A91644B905EDDd1CD931ffcD49aC5f80D",transactionHash:"0x246be58aa85d8a9ac25610bdc5eb7166cb78707f0362d9187e8d6d7c33e80db5"},{contractName:"CoinTransferInterpreter",address:"0x01428E1ed4BFDa2B9820CD0689eC407Bc2aB1cDF",transactionHash:"0xfac913187a7707f76cc5ed7481015facd3d830c484dc5fc9c03ab3d4f260e85c"},{contractName:"ConditionalTransactionDelegateTarget",address:"0x68414D9ceD10a422343590425823320E24485B02",transactionHash:"0x5da8471f7502cce36b7a91dc6705f5a63f0444e86b103a9f4cef45ffb318c051"},{contractName:"FreeBalanceApp",address:"0x79a5eC35534717dFEC167062328C613fC9840F55",transactionHash:"0xdabf87c50e37c2e22481451582cc462e57a723340f065b060ec0a9cff2966a8a"},{contractName:"IdentityApp",address:"0x17Ca1Fe423Ec32B2A95733ef3aa6a963D616697d",transactionHash:"0x65d150e1866b643616e9fe62eb7bbad49dd5b605e537c1f3550979400f42d25e"},{contractName:"MinimumViableMultisig",address:"0x4ce2bDfF009900fae668EB74e46b237e619B951a",transactionHash:"0xd6c5ea1c0047d8f14b2fe83620c121e64cfee91808f1601352caa04e2734ca95"},{contractName:"ProxyFactory",address:"0x3780e2Af8DAf979A6F66d76551AfA7CB8311D396",transactionHash:"0xfa4850a867eaa9681884327870a11aaddbc81ad0ee1605223b4ce85ff5615011"},{contractName:"TimeLockedPassThrough",address:"0x06143c7eb8bC68CD743BEBc39fb5b5B18195C21E",transactionHash:"0xde7a76e301768399494a9f7dd319270b4e51e56ec73f88e22214a70a56ead409"},{contractName:"Migrations",address:"0x9a2AdA593637c7f404C3DA69Ee26e4B1E8CfC0Fd",transactionHash:"0x5b9168daa3a09730373d468cfc61dfef71b9f78130d49e2496d9b79cf1345ab9"},{contractName:"ChallengeRegistry",address:"0x100Db874AC77dc8ddad7421b6464e188A2F533D6",transactionHash:"0xbc1bb1ebe71d8ceaf6024da3b4b68e972af37b8570e7e508022dfb6a8f2ab0e3"},{contractName:"TwoPartyFixedOutcomeInterpreter",address:"0x0C8D6B0EF29f242ced6c52001aF3B15d488A2A63",transactionHash:"0x5a285892581ef45f662ac5058ed6ba4924eff50ac418822397879111bee5981e"},{contractName:"TwoPartyFixedOutcomeFromVirtualAppInterpreter",address:"0x85F91D69760DAAe7140f3bd3e30532A20DF98c91",transactionHash:"0xebdccee775fa74d7508eaf235760fef61edb70ea3cecf9db0160311eaae513bf"}];
 
     const SUPPORTED_NETWORKS = new Set(["ropsten", "rinkeby", "kovan"]);
     function getNetworkContextForNetworkName(networkName) {

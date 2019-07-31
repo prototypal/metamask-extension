@@ -29,6 +29,9 @@ function createCounterfactualMiddleware (counterfactualController, metamaskContr
           case 'counterfactual:request:deposit':
             res.result = await counterfactualController.metamaskRequestDepositRPC(req.params[0], req.params[1])
             break
+          case 'counterfactual:request:withdraw':
+            res.result = await counterfactualController.metamaskRequestWithdrawRPC(req.params[0], req.params[1], req.params[2])
+            break    
           case 'counterfactual:request:user':
             res.result = await counterfactualController.playgroundRequestUserRPC()
             break
