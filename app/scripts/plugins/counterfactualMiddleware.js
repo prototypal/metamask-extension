@@ -5,7 +5,7 @@ module.exports = createCounterfactualMiddleware
 function createCounterfactualMiddleware (counterfactualController, metamaskController) {
   return createAsyncMiddleware(async function counterfactualMiddleware (req, res, next) {
     if (req.method.includes('counterfactual')) {
-      await counterfactualController.initialize({metamaskController})
+      await counterfactualController.initialize({ metamaskController })
       switch (req.method) {
           case 'counterfactual:set:user':
             window.localStorage.setItem('playground:user:token', req.params[0])
@@ -53,7 +53,7 @@ function createCounterfactualMiddleware (counterfactualController, metamaskContr
             break
       }
     } else {
-        return next()
+      return next()
     }
   })
 }

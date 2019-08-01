@@ -582,10 +582,8 @@ this.window.cf = (function (exports, utils$1) {
 	var OutcomeType;
 	(function (OutcomeType) {
 	    OutcomeType[OutcomeType["TWO_PARTY_FIXED_OUTCOME"] = 0] = "TWO_PARTY_FIXED_OUTCOME";
-	    OutcomeType[OutcomeType["COIN_TRANSFER_DO_NOT_USE"] = 1] = "COIN_TRANSFER_DO_NOT_USE";
-	    OutcomeType[OutcomeType["FREE_BALANCE_OUTCOME_TYPE"] = 2] = "FREE_BALANCE_OUTCOME_TYPE";
-	    OutcomeType[OutcomeType["REFUND_OUTCOME_TYPE"] = 3] = "REFUND_OUTCOME_TYPE";
-	    OutcomeType[OutcomeType["SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER"] = 4] = "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER";
+	    OutcomeType[OutcomeType["MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER"] = 1] = "MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER";
+	    OutcomeType[OutcomeType["SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER"] = 2] = "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER";
 	})(OutcomeType || (OutcomeType = {}));
 	var TwoPartyFixedOutcome;
 	(function (TwoPartyFixedOutcome) {
