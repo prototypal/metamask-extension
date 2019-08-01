@@ -157,6 +157,26 @@ module.exports = class CounterfactualController {
       console.error(e)
     }
   }
+  
+  async metamaskRequestWithdrawRPC (amount, multisigAddress, recipient) {
+    try {
+      const parameters = {
+        amount,
+        recipient,
+        multisigAddress,
+        notifyCounterparty: true,
+      }
+      const request = {
+        id: uuid.v4(),
+        methodName: "chan_withdraw",
+        parameters,
+      }
+      const result = await this.node.rpcRouter.dispatch(request);
+      return result
+    } catch (e) {
+      console.error(e)
+    }
+  }
 
   async metamaskRequestWithdrawRPC (amount, multisigAddress, recipient) {
     try {
