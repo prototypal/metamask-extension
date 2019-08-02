@@ -139,17 +139,17 @@ module.exports = class CounterfactualController {
     })
   }
 
-  async metamaskRequestDepositRPC (amount, multisigAddress) {
+  async metamaskRequestDepositRPC (amount, multisigAddress, tokenAddress) {
     try {
-      const params = {
-        amount,
-        multisigAddress: multisigAddress,
-        notifyCounterparty: true,
-      }
       const request = {
         id: uuid.v4(),
         methodName: "chan_deposit",
-        parameters: params,
+        parameters: {
+          amount,
+          tokenAddress,
+          multisigAddress,
+          notifyCounterparty: true,
+        },
       }
       const result = await this.node.rpcRouter.dispatch(request)
       return result
@@ -157,30 +157,9 @@ module.exports = class CounterfactualController {
       console.error(e)
     }
   }
-  
-  async metamaskRequestWithdrawRPC (amount, multisigAddress, recipient) {
-    try {
-      const parameters = {
-        amount,
-        recipient,
-        multisigAddress,
-        notifyCounterparty: true,
-      }
-      const request = {
-        id: uuid.v4(),
-        methodName: "chan_withdraw",
-        parameters,
-      }
-      const result = await this.node.rpcRouter.dispatch(request);
-      return result
-    } catch (e) {
-      console.error(e)
-    }
-  }
 
-  async metamaskRequestWithdrawRPC (amount, multisigAddress, recipient) {
+  async metamaskRequestWithdrawRPC (amount, multisigAddress, recipient, tokenAddress) {
     try {
-      const NodeMethodName = 'withdraw'
       const result = await this.node.rpcRouter.dispatch({
         id: Date.now(),
         methodName: 'chan_withdraw',
@@ -188,6 +167,7 @@ module.exports = class CounterfactualController {
           amount,
           recipient,
           multisigAddress,
+          tokenAddress
         },
       });
       return result
@@ -205,8 +185,8 @@ module.exports = class CounterfactualController {
     })
   }
 
-  async metamaskRequestBalancesRPC (multisigAddress) {
-    const params = { multisigAddress }
+  async metamaskRequestBalancesRPC (multisigAddress, tokenAddress) {
+    const params = { multisigAddress, tokenAddress }
     const request = {
       id: uuid.v4(),
       methodName: "chan_getFreeBalanceState",
