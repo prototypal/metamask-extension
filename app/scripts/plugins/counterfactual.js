@@ -147,8 +147,7 @@ module.exports = class CounterfactualController {
         parameters: {
           amount,
           tokenAddress,
-          multisigAddress,
-          notifyCounterparty: true,
+          multisigAddress
         },
       }
       const result = await this.node.rpcRouter.dispatch(request)
@@ -260,9 +259,9 @@ module.exports = class CounterfactualController {
     const data = await response.json()
     const userData = data.data[0]
     const account = Object.assign({
-        id: userData.id,
-        token: userToken,
-      }, userData.attributes)
+      id: userData.id,
+      token: userToken,
+    }, userData.attributes)
     return account
   }
 
