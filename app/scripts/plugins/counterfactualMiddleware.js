@@ -15,7 +15,7 @@ function createCounterfactualMiddleware (counterfactualController, metamaskContr
             res.result = await counterfactualController.metamaskGetNodeAddressRPC()
             break
           case 'counterfactual:request:balances':
-            res.result = await counterfactualController.metamaskRequestBalancesRPC(req.params[0])
+            res.result = await counterfactualController.metamaskRequestBalancesRPC(req.params[0], req.params[1])
             break
           case 'counterfactual:listen:createChannel':
             res.result = await counterfactualController.metamaskListenCreateChannelRPC()
@@ -27,11 +27,11 @@ function createCounterfactualMiddleware (counterfactualController, metamaskContr
             res.result = await counterfactualController.metamaskRequestDepositConfirmedRPC()
             break
           case 'counterfactual:request:deposit':
-            res.result = await counterfactualController.metamaskRequestDepositRPC(req.params[0], req.params[1])
+            res.result = await counterfactualController.metamaskRequestDepositRPC(req.params[0], req.params[1], req.params[2])
             break
           case 'counterfactual:request:withdraw':
-            res.result = await counterfactualController.metamaskRequestWithdrawRPC(req.params[0], req.params[1], req.params[2])
-            break    
+            res.result = await counterfactualController.metamaskRequestWithdrawRPC(req.params[0], req.params[1], req.params[2], req.params[3])
+            break
           case 'counterfactual:request:user':
             res.result = await counterfactualController.playgroundRequestUserRPC()
             break
