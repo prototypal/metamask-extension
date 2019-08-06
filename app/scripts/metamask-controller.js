@@ -60,7 +60,9 @@ const {
   PhishingController,
 } = require('gaba')
 const backEndMetaMetricsEvent = require('./lib/backend-metametrics')
-
+const createCounterfactualMiddleware = require('./plugins/counterfactualMiddleware')
+const CounterfactualController = require('./plugins/counterfactual')
+const providerFromEngine = require('eth-json-rpc-middleware/providerFromEngine')
 
 module.exports = class MetamaskController extends EventEmitter {
 
@@ -285,6 +287,8 @@ module.exports = class MetamaskController extends EventEmitter {
       ProviderApprovalController: this.providerApprovalController.store,
     })
     this.memStore.subscribe(this.sendUpdate.bind(this))
+
+    this.counterfactualController = new CounterfactualController({})
   }
 
   /**
@@ -1408,6 +1412,10 @@ module.exports = class MetamaskController extends EventEmitter {
       origin,
       getSiteMetadata,
     }))
+
+    // counterfactual middleware
+    engine.push(createCounterfactualMiddleware(this.counterfactualController, this))
+
     // forward to metamask primary provider
     engine.push(providerAsMiddleware(provider))
     return engine

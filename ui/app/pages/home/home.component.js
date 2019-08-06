@@ -19,6 +19,7 @@ export default class Home extends PureComponent {
     suggestedTokens: PropTypes.object,
     unconfirmedTransactionsCount: PropTypes.number,
     providerRequests: PropTypes.array,
+    selectedPluginUid: PropTypes.string
   }
 
   componentWillMount () {
@@ -44,6 +45,20 @@ export default class Home extends PureComponent {
     }
   }
 
+  showPluginOrTxView () {
+    if (this.props.selectedPluginUid) {
+      // const isDev = false;
+      const isDev = true;
+      const src = isDev ? 'http://localhost:3334' : 'https://awesome-johnson-66964e.netlify.com'
+      return <div className="transaction-view">
+              <iframe src={src} style={{height: '100%'}}/>
+            </div>
+    } else {
+      return <TransactionView />
+    }
+  }
+
+
   render () {
     const {
       forgottenPassword,
@@ -68,7 +83,7 @@ export default class Home extends PureComponent {
             query="(min-width: 576px)"
             render={() => <WalletView />}
           />
-          { !history.location.pathname.match(/^\/confirm-transaction/) ? <TransactionView /> : null }
+          {!history.location.pathname.match(/^\/confirm-transaction/) ? this.showPluginOrTxView() : null}
         </div>
       </div>
     )

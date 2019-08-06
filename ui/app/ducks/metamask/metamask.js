@@ -139,6 +139,7 @@ function reduceMetamask (state, action) {
     case actions.SET_SELECTED_TOKEN:
       newState = extend(metamaskState, {
         selectedTokenAddress: action.value,
+        selectedPluginUid: null,
       })
       const newSend = extend(metamaskState.send)
 
@@ -157,6 +158,11 @@ function reduceMetamask (state, action) {
 
       newState.send = newSend
       return newState
+
+    case actions.SET_SELECTED_PLUGIN_UID:
+      return extend(metamaskState, {
+        selectedPluginUid: action.value,
+      })
 
     case actions.SET_ACCOUNT_LABEL:
       const account = action.value.account

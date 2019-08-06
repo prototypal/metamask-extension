@@ -14,6 +14,7 @@ const copyToClipboard = require('copy-to-clipboard')
 const actions = require('../../store/actions')
 import BalanceComponent from '../ui/balance'
 const TokenList = require('./token-list')
+const PluginCell = require('../plugins/plugin-cell')
 const selectors = require('../../selectors/selectors')
 const { ADD_TOKEN_ROUTE } = require('../../helpers/constants/routes')
 
@@ -232,6 +233,8 @@ WalletView.prototype.render = function () {
     h(TokenList),
 
     this.renderAddToken(),
+
+    h(PluginCell),
   ])
 }
 

@@ -15,6 +15,7 @@ const selectors = {
   getSelectedIdentity,
   getSelectedAccount,
   getSelectedToken,
+  getSelectedPluginUid,
   getSelectedTokenExchangeRate,
   getSelectedTokenAssetImage,
   getAssetImages,
@@ -101,6 +102,10 @@ function getSelectedAsset (state) {
 
 function getCurrentNetworkId (state) {
   return state.metamask.network
+}
+
+function getSelectedPluginUid (state) {
+  return state.metamask.selectedPluginUid
 }
 
 function getSelectedAddress (state) {

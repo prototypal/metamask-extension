@@ -29,6 +29,15 @@
   "background": {
     "scripts": [
       "chromereload.js",
+      "vendor/counterfactual/node/uuid.js",
+      "vendor/counterfactual/node/firebase.js",
+      "vendor/counterfactual/node/ethers.js",
+      "vendor/counterfactual/node/loglevel.min.js",
+      "vendor/counterfactual/node/firebaseclient.iife.js",
+      "vendor/counterfactual/node/cf.js.iife.js",
+      "vendor/counterfactual/node/eventemitter3.js",
+      "vendor/counterfactual/node/setup.js",
+      "vendor/counterfactual/node/node.iife.js",
       "background.js"
     ],
     "persistent": true
@@ -43,26 +52,17 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "file://*/*",
-        "http://*/*",
-        "https://*/*"
-      ],
-      "js": [
-        "contentscript.js"
-      ],
+      "matches": ["file://*/*", "http://*/*", "https://*/*"],
+      "js": ["contentscript.js"],
       "run_at": "document_start",
       "all_frames": true
     },
     {
-      "matches": [
-        "*://connect.trezor.io/*/popup.html"
-      ],
-      "js": [
-        "vendor/trezor/content-script.js"
-      ]
+      "matches": ["*://connect.trezor.io/*/popup.html"],
+      "js": ["vendor/trezor/content-script.js"]
     }
   ],
+  "content_security_policy": "script-src 'self' https://*.firebaseio.com; object-src 'self'",
   "permissions": [
     "storage",
     "unlimitedStorage",
@@ -74,16 +74,9 @@
     "*://*.eth/",
     "notifications"
   ],
-  "web_accessible_resources": [
-    "inpage.js",
-    "phishing.html"
-  ],
+  "web_accessible_resources": ["inpage.js", "phishing.html"],
   "externally_connectable": {
-    "matches": [
-      "https://metamask.io/*"
-    ],
-    "ids": [
-      "*"
-    ]
+    "matches": ["https://metamask.io/*"],
+    "ids": ["*"]
   }
 }
