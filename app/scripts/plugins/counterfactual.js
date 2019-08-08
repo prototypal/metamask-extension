@@ -195,6 +195,16 @@ module.exports = class CounterfactualController {
     return response.result.result
   }
 
+  async metamaskRequestIndexedBalancesRPC (multisigAddress) {
+    const request = {
+      id: uuid.v4(),
+      methodName: "chan_getTokenIndexedFreeBalanceStates",
+      parameters: { multisigAddress },
+    }
+    const response = await this.node.rpcRouter.dispatch(request)
+    return response.result.result
+  }
+
   metamaskGetNodeAddressRPC () {
     return this.node.publicIdentifier
   }

@@ -449,9 +449,9 @@ this.window.cf = (function (exports, utils$1) {
 
 	var OutcomeType;
 	(function (OutcomeType) {
-	    OutcomeType[OutcomeType["TWO_PARTY_FIXED_OUTCOME"] = 0] = "TWO_PARTY_FIXED_OUTCOME";
-	    OutcomeType[OutcomeType["MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER"] = 1] = "MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER";
-	    OutcomeType[OutcomeType["SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER"] = 2] = "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER";
+	    OutcomeType["TWO_PARTY_FIXED_OUTCOME"] = "TWO_PARTY_FIXED_OUTCOME";
+	    OutcomeType["MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER"] = "MULTI_ASSET_MULTI_PARTY_COIN_TRANSFER";
+	    OutcomeType["SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER"] = "SINGLE_ASSET_TWO_PARTY_COIN_TRANSFER";
 	})(OutcomeType || (OutcomeType = {}));
 	var TwoPartyFixedOutcome;
 	(function (TwoPartyFixedOutcome) {
@@ -476,6 +476,7 @@ this.window.cf = (function (exports, utils$1) {
 	        MethodName["GET_CHANNEL_ADDRESSES"] = "getChannelAddresses";
 	        MethodName["GET_STATE_DEPOSIT_HOLDER_ADDRESS"] = "getStateDepositHolderAddress";
 	        MethodName["GET_FREE_BALANCE_STATE"] = "getFreeBalanceState";
+	        MethodName["GET_TOKEN_INDEXED_FREE_BALANCE_STATES"] = "getTokenIndexedFreeBalanceStates";
 	        MethodName["GET_PROPOSED_APP_INSTANCE"] = "getProposedAppInstance";
 	        MethodName["GET_PROPOSED_APP_INSTANCES"] = "getProposedAppInstances";
 	        MethodName["GET_STATE"] = "getState";
@@ -501,6 +502,7 @@ this.window.cf = (function (exports, utils$1) {
 	        RpcMethodName["GET_APP_INSTANCES"] = "chan_getAppInstances";
 	        RpcMethodName["GET_STATE_DEPOSIT_HOLDER_ADDRESS"] = "chan_getStateDepositHolderAddress";
 	        RpcMethodName["GET_FREE_BALANCE_STATE"] = "chan_getFreeBalanceState";
+	        RpcMethodName["GET_TOKEN_INDEXED_FREE_BALANCE_STATES"] = "chan_getTokenIndexedFreeBalanceStates";
 	        RpcMethodName["GET_PROPOSED_APP_INSTANCES"] = "chan_getProposedAppInstances";
 	        RpcMethodName["GET_STATE"] = "chan_getState";
 	        RpcMethodName["INSTALL"] = "chan_install";
