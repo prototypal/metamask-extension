@@ -17,7 +17,7 @@ function createCounterfactualMiddleware (counterfactualController, metamaskContr
           case 'counterfactual:request:balances':
             res.result = await counterfactualController.metamaskRequestBalancesRPC(req.params[0], req.params[1])
             break
-          case 'counterfactual:request:indexed_balances':
+          case 'counterfactual:request:token_indexed_balances':
             res.result = await counterfactualController.metamaskRequestIndexedBalancesRPC(req.params[0])
             break
           case 'counterfactual:listen:createChannel':
