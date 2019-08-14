@@ -210,7 +210,7 @@ module.exports = class CounterfactualController {
   }
 
   relayMessageToNodeRPC (message) {
-    this.node.emit(message.methodName, message)
+    this.node.rpcRouter.dispatch(message);
 
     return new Promise((resolve, _reject) => {
       function relayMessageToDapp (event) {
