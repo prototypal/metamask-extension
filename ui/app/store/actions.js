@@ -1,7 +1,7 @@
 const abi = require('human-standard-token-abi')
 const pify = require('pify')
 const getBuyEthUrl = require('../../../app/scripts/lib/buy-eth-url')
-const { getTokenAddressFromTokenObject } = require('../helpers/utils/util')
+const { getTokenAddressFromTokenObject, checksumAddress } = require('../helpers/utils/util')
 const {
   calcTokenBalance,
   estimateGas,
@@ -137,6 +137,8 @@ var actions = {
   showSendTokenPage,
   ADD_TO_ADDRESS_BOOK: 'ADD_TO_ADDRESS_BOOK',
   addToAddressBook: addToAddressBook,
+  REMOVE_FROM_ADDRESS_BOOK: 'REMOVE_FROM_ADDRESS_BOOK',
+  removeFromAddressBook: removeFromAddressBook,
   REQUEST_ACCOUNT_EXPORT: 'REQUEST_ACCOUNT_EXPORT',
   requestExportAccount: requestExportAccount,
   EXPORT_ACCOUNT: 'EXPORT_ACCOUNT',
@@ -196,6 +198,10 @@ var actions = {
   CLOSE_FROM_DROPDOWN: 'CLOSE_FROM_DROPDOWN',
   GAS_LOADING_STARTED: 'GAS_LOADING_STARTED',
   GAS_LOADING_FINISHED: 'GAS_LOADING_FINISHED',
+  UPDATE_SEND_ENS_RESOLUTION: 'UPDATE_SEND_ENS_RESOLUTION',
+  UPDATE_SEND_ENS_RESOLUTION_ERROR: 'UPDATE_SEND_ENS_RESOLUTION_ERROR',
+  updateSendEnsResolution,
+  updateSendEnsResolutionError,
   setGasLimit,
   setGasPrice,
   updateGasData,
@@ -270,12 +276,12 @@ var actions = {
   showSubLoadingIndication: showSubLoadingIndication,
   HIDE_SUB_LOADING_INDICATION: 'HIDE_SUB_LOADING_INDICATION',
   hideSubLoadingIndication: hideSubLoadingIndication,
-// QR STUFF:
+  // QR STUFF:
   SHOW_QR: 'SHOW_QR',
   showQrView: showQrView,
   reshowQrCode: reshowQrCode,
   SHOW_QR_VIEW: 'SHOW_QR_VIEW',
-// FORGOT PASSWORD:
+  // FORGOT PASSWORD:
   BACK_TO_INIT_MENU: 'BACK_TO_INIT_MENU',
   goBackToInitView: goBackToInitView,
   RECOVERY_IN_PROGRESS: 'RECOVERY_IN_PROGRESS',
@@ -320,6 +326,7 @@ var actions = {
   setUseNativeCurrencyAsPrimaryCurrencyPreference,
   setShowFiatConversionOnTestnetsPreference,
   setAutoLogoutTimeLimit,
+  unsetMigratedPrivacyMode,
 
   // Onboarding
   setCompletedOnboarding,
@@ -344,6 +351,7 @@ var actions = {
 
   approveProviderRequestByOrigin,
   rejectProviderRequestByOrigin,
+  forceApproveProviderRequestByOrigin,
   clearApprovedOrigins,
 
   setFirstTimeFlowType,
@@ -369,6 +377,10 @@ var actions = {
   LOADING_TOKEN_PARAMS_STARTED: 'LOADING_TOKEN_PARAMS_STARTED',
   loadingTokenParamsFinished,
   LOADING_TOKEN_PARAMS_FINISHED: 'LOADING_TOKEN_PARAMS_FINISHED',
+
+  setSeedPhraseBackedUp,
+  verifySeedPhrase,
+  SET_SEED_PHRASE_BACKED_UP_TO_TRUE: 'SET_SEED_PHRASE_BACKED_UP_TO_TRUE',
 }
 
 module.exports = actions
@@ -787,22 +799,22 @@ function showInfoPage () {
 function showQrScanner (ROUTE) {
   return (dispatch) => {
     return WebcamUtils.checkStatus()
-    .then(status => {
-      if (!status.environmentReady) {
-         // We need to switch to fullscreen mode to ask for permission
-         global.platform.openExtensionInBrowser(`${ROUTE}`, `scan=true`)
-      } else {
+      .then(status => {
+        if (!status.environmentReady) {
+          // We need to switch to fullscreen mode to ask for permission
+          global.platform.openExtensionInBrowser(`${ROUTE}`, `scan=true`)
+        } else {
+          dispatch(actions.showModal({
+            name: 'QR_SCANNER',
+          }))
+        }
+      }).catch(e => {
         dispatch(actions.showModal({
           name: 'QR_SCANNER',
+          error: true,
+          errorType: e.type,
         }))
-      }
-    }).catch(e => {
-      dispatch(actions.showModal({
-        name: 'QR_SCANNER',
-        error: true,
-        errorType: e.type,
-      }))
-    })
+      })
   }
 }
 
@@ -963,17 +975,17 @@ function updateGasData ({
       estimateGasPrice: gasPrice,
       data,
     })
-    .then(gas => {
-      dispatch(actions.setGasLimit(gas))
-      dispatch(gasDuck.setCustomGasLimit(gas))
-      dispatch(updateSendErrors({ gasLoadingError: null }))
-      dispatch(actions.gasLoadingFinished())
-    })
-    .catch(err => {
-      log.error(err)
-      dispatch(updateSendErrors({ gasLoadingError: 'gasLoadingError' }))
-      dispatch(actions.gasLoadingFinished())
-    })
+      .then(gas => {
+        dispatch(actions.setGasLimit(gas))
+        dispatch(gasDuck.setCustomGasLimit(gas))
+        dispatch(updateSendErrors({ gasLoadingError: null }))
+        dispatch(actions.gasLoadingFinished())
+      })
+      .catch(err => {
+        log.error(err)
+        dispatch(updateSendErrors({ gasLoadingError: 'gasLoadingError' }))
+        dispatch(actions.gasLoadingFinished())
+      })
   }
 }
 
@@ -1081,6 +1093,20 @@ function clearSend () {
   }
 }
 
+function updateSendEnsResolution (ensResolution) {
+  return {
+    type: actions.UPDATE_SEND_ENS_RESOLUTION,
+    payload: ensResolution,
+  }
+}
+
+function updateSendEnsResolutionError (errorMessage) {
+  return {
+    type: actions.UPDATE_SEND_ENS_RESOLUTION_ERROR,
+    payload: errorMessage,
+  }
+}
+
 
 function sendTx (txData) {
   log.info(`actions - sendTx: ${JSON.stringify(txData.txParams)}`)
@@ -1148,9 +1174,9 @@ function updateTransaction (txData) {
         resolve(txData)
       })
     })
-    .then(() => updateMetamaskStateFromBackground())
-    .then(newState => dispatch(actions.updateMetamaskState(newState)))
-    .then(() => {
+      .then(() => updateMetamaskStateFromBackground())
+      .then(newState => dispatch(actions.updateMetamaskState(newState)))
+      .then(() => {
         dispatch(actions.showConfTxPage({ id: txData.id }))
         dispatch(actions.hideLoadingIndication())
         return txData
@@ -1701,10 +1727,10 @@ function addTokens (tokens) {
       dispatch(actions.setSelectedToken(getTokenAddressFromTokenObject(tokens)))
       return Promise.all(
         Object
-        .entries(tokens)
-        .map(([_, { address, symbol, decimals }]) => (
-          dispatch(addToken(address, symbol, decimals))
-        ))
+          .entries(tokens)
+          .map(([_, { address, symbol, decimals }]) => (
+            dispatch(addToken(address, symbol, decimals))
+          ))
       )
     }
   }
@@ -1727,8 +1753,8 @@ function removeSuggestedTokens () {
         resolve(suggestedTokens)
       })
     })
-    .then(() => updateMetamaskStateFromBackground())
-    .then(suggestedTokens => dispatch(actions.updateMetamaskState({...suggestedTokens})))
+      .then(() => updateMetamaskStateFromBackground())
+      .then(suggestedTokens => dispatch(actions.updateMetamaskState({...suggestedTokens})))
   }
 }
 
@@ -1803,8 +1829,8 @@ function createCancelTransaction (txId, customGasPrice) {
         resolve(newState)
       })
     })
-    .then(newState => dispatch(actions.updateMetamaskState(newState)))
-    .then(() => newTxId)
+      .then(newState => dispatch(actions.updateMetamaskState(newState)))
+      .then(() => newTxId)
   }
 }
 
@@ -1825,8 +1851,8 @@ function createSpeedUpTransaction (txId, customGasPrice) {
         resolve(newState)
       })
     })
-    .then(newState => dispatch(actions.updateMetamaskState(newState)))
-    .then(() => newTx)
+      .then(newState => dispatch(actions.updateMetamaskState(newState)))
+      .then(() => newTx)
   }
 }
 
@@ -1934,17 +1960,28 @@ function delRpcTarget (oldRpc) {
   }
 }
 
-
 // Calls the addressBookController to add a new address.
-function addToAddressBook (recipient, nickname = '') {
+function addToAddressBook (recipient, nickname = '', memo = '') {
   log.debug(`background.addToAddressBook`)
-  return (dispatch) => {
-    background.setAddressBook(recipient, nickname, (err) => {
-      if (err) {
-        log.error(err)
-        return dispatch(self.displayWarning('Address book failed to update'))
-      }
-    })
+
+  return (dispatch, getState) => {
+    const chainId = getState().metamask.network
+    const set = background.setAddressBook(checksumAddress(recipient), nickname, chainId, memo)
+    if (!set) {
+      return dispatch(displayWarning('Address book failed to update'))
+    }
+  }
+}
+
+/**
+ * @description Calls the addressBookController to remove an existing address.
+ * @param {String} addressToRemove - Address of the entry to remove from the address book
+ */
+function removeFromAddressBook (addressToRemove) {
+  log.debug(`background.removeFromAddressBook`)
+
+  return () => {
+    background.removeFromAddressBook(checksumAddress(addressToRemove))
   }
 }
 
@@ -2050,10 +2087,10 @@ function showLoadingIndication (message) {
 }
 
 function setHardwareWalletDefaultHdPath ({ device, path }) {
-    return {
-      type: actions.SET_HARDWARE_WALLET_DEFAULT_HD_PATH,
-      value: {device, path},
-    }
+  return {
+    type: actions.SET_HARDWARE_WALLET_DEFAULT_HD_PATH,
+    value: {device, path},
+  }
 }
 
 function hideLoadingIndication () {
@@ -2616,6 +2653,12 @@ function approveProviderRequestByOrigin (origin) {
   }
 }
 
+function forceApproveProviderRequestByOrigin (origin) {
+  return () => {
+    background.forceApproveProviderRequestByOrigin(origin)
+  }
+}
+
 function rejectProviderRequestByOrigin (origin) {
   return () => {
     background.rejectProviderRequestByOrigin(origin)
@@ -2735,5 +2778,26 @@ function getTokenParams (tokenAddress) {
         dispatch(actions.addToken(tokenAddress, symbol, decimals))
         dispatch(actions.loadingTokenParamsFinished())
       })
+  }
+}
+
+function unsetMigratedPrivacyMode () {
+  return () => {
+    background.unsetMigratedPrivacyMode()
+  }
+}
+
+function setSeedPhraseBackedUp (seedPhraseBackupState) {
+  return (dispatch) => {
+    log.debug(`background.setSeedPhraseBackedUp`)
+    return new Promise((resolve, reject) => {
+      background.setSeedPhraseBackedUp(seedPhraseBackupState, (err) => {
+        if (err) {
+          dispatch(actions.displayWarning(err.message))
+          return reject(err)
+        }
+        return forceUpdateMetamaskState(dispatch).then(() => resolve())
+      })
+    })
   }
 }

@@ -7,6 +7,13 @@ const ADVANCED_ROUTE = '/settings/advanced'
 const SECURITY_ROUTE = '/settings/security'
 const ABOUT_US_ROUTE = '/settings/about-us'
 const NETWORKS_ROUTE = '/settings/networks'
+const CONTACT_LIST_ROUTE = '/settings/contact-list'
+const CONTACT_EDIT_ROUTE = '/settings/contact-list/edit-contact'
+const CONTACT_ADD_ROUTE = '/settings/contact-list/add-contact'
+const CONTACT_VIEW_ROUTE = '/settings/contact-list/view-contact'
+const CONTACT_MY_ACCOUNTS_ROUTE = '/settings/contact-list/my-accounts'
+const CONTACT_MY_ACCOUNTS_VIEW_ROUTE = '/settings/contact-list/my-accounts/view'
+const CONTACT_MY_ACCOUNTS_EDIT_ROUTE = '/settings/contact-list/my-accounts/edit'
 const REVEAL_SEED_ROUTE = '/seed'
 const MOBILE_SYNC_ROUTE = '/mobile-sync'
 const RESTORE_VAULT_ROUTE = '/restore-vault'
@@ -25,6 +32,7 @@ const INITIALIZE_CREATE_PASSWORD_ROUTE = '/initialize/create-password'
 const INITIALIZE_IMPORT_WITH_SEED_PHRASE_ROUTE = '/initialize/create-password/import-with-seed-phrase'
 const INITIALIZE_SELECT_ACTION_ROUTE = '/initialize/select-action'
 const INITIALIZE_SEED_PHRASE_ROUTE = '/initialize/seed-phrase'
+const INITIALIZE_BACKUP_SEED_PHRASE_ROUTE = '/initialize/backup-seed-phrase'
 const INITIALIZE_END_OF_FLOW_ROUTE = '/initialize/end-of-flow'
 const INITIALIZE_CONFIRM_SEED_PHRASE_ROUTE = '/initialize/seed-phrase/confirm'
 const INITIALIZE_METAMETRICS_OPT_IN_ROUTE = '/initialize/metametrics-opt-in'
@@ -75,5 +83,14 @@ module.exports = {
   SECURITY_ROUTE,
   GENERAL_ROUTE,
   ABOUT_US_ROUTE,
+  CONTACT_LIST_ROUTE,
+  CONTACT_EDIT_ROUTE,
+  CONTACT_ADD_ROUTE,
+  CONTACT_VIEW_ROUTE,
+  CONTACT_MY_ACCOUNTS_ROUTE,
+  CONTACT_MY_ACCOUNTS_VIEW_ROUTE,
+  CONTACT_MY_ACCOUNTS_EDIT_ROUTE,
   NETWORKS_ROUTE,
+  INITIALIZE_BACKUP_SEED_PHRASE_ROUTE,
 }
+

@@ -1,6 +1,9 @@
 const extension = require('extensionizer')
 const {createExplorerLink: explorerLink} = require('etherscan-link')
 
+const {getEnvironmentType} = require('../lib/util')
+const {ENVIRONMENT_TYPE_BACKGROUND} = require('../lib/enums')
+
 class ExtensionPlatform {
 
   //
@@ -35,6 +38,9 @@ class ExtensionPlatform {
       extensionURL += `#${route}`
     }
     this.openWindow({ url: extensionURL })
+    if (getEnvironmentType() !== ENVIRONMENT_TYPE_BACKGROUND) {
+      window.close()
+    }
   }
 
   getPlatformInfo (cb) {
@@ -84,10 +90,10 @@ class ExtensionPlatform {
     extension.notifications.create(
       url,
       {
-      'type': 'basic',
-      'title': title,
-      'iconUrl': extension.extension.getURL('../../images/icon-64.png'),
-      'message': message,
+        'type': 'basic',
+        'title': title,
+        'iconUrl': extension.extension.getURL('../../images/icon-64.png'),
+        'message': message,
       })
   }
 
