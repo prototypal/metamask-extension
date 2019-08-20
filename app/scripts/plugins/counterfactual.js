@@ -93,11 +93,6 @@ module.exports = class CounterfactualController {
 
     const serviceFactory = new FirebaseServiceFactory(FIREBASE_OPTIONS)
 
-    const nodeMnemonic =
-      JSON.parse(window.localStorage.getItem(window.MNEMONIC_PATH)) ||
-      ethers.Wallet.createRandom().mnemonic
-
-    await store.set([{ key: window.MNEMONIC_PATH, value: nodeMnemonic }])
     this.provider = new ethers.providers.Web3Provider(cfProvider)
     const signer = await this.provider.getSigner()
     const address = await signer.getAddress()
