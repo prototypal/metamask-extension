@@ -56,8 +56,8 @@ const store = {
     return Object.keys(entries).length > 0 ? entries : undefined
   },
   async set (pairs) {
-    pairs.forEach(({ key, value }) => {
-      window.localStorage.setItem(key, JSON.stringify(value))
+    pairs.forEach(({ path, value }) => {
+      window.localStorage.setItem(path, JSON.stringify(value))
     })
     return true
   },
