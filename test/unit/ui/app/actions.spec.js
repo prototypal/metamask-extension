@@ -628,7 +628,7 @@ describe('Actions', () => {
         { type: 'DISPLAY_WARNING', value: 'error' },
         { type: 'HIDE_LOADING_INDICATION' },
         { type: 'LOCK_METAMASK' },
-    ]
+      ]
       backgroundSetLockedSpy = sinon.stub(background, 'setLocked')
       backgroundSetLockedSpy.callsFake(callback => {
         callback(new Error('error'))
@@ -869,7 +869,7 @@ describe('Actions', () => {
     })
 
     it('', () => {
-      const store = mockStore()
+      const store = mockStore({ metamask: devState })
       store.dispatch(actions.addToAddressBook('test'))
       assert(addToAddressBookSpy.calledOnce)
     })

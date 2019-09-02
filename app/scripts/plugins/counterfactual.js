@@ -1,3 +1,4 @@
+// const Node = require('@counterfactual/node')
 const Node = window.Node
 const FirebaseServiceFactory = window.FirebaseServiceFactory
 const ethers = window.ethers

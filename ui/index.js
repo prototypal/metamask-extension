@@ -34,6 +34,7 @@ async function startApp (metamaskState, backgroundConnection, opts) {
   const enLocaleMessages = await fetchLocale('en')
 
   const store = configureStore({
+    activeTab: opts.activeTab,
 
     // metamaskState represents the cross-tab state
     metamask: metamaskState,
@@ -79,7 +80,7 @@ async function startApp (metamaskState, backgroundConnection, opts) {
       // inject initial state
       store: store,
     }
-  ), opts.container)
+    ), opts.container)
 
   return store
 }
